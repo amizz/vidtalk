@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { X, Upload, FileVideo, Loader2 } from 'lucide-react';
+import { useToast } from '~/contexts/ToastContext';
 
 interface VideoUploadModalProps {
   isOpen: boolean;
@@ -12,6 +13,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { showToast } = useToast();
 
   if (!isOpen) return null;
 
@@ -34,6 +36,8 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
       const file = files[0];
       if (file.type.startsWith('video/')) {
         setSelectedFile(file);
+      } else {
+        showToast('Please select a video file', 'error');
       }
     }
   };
@@ -87,7 +91,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
       onClose();
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload video. Please try again.');
+      showToast('Failed to upload video. Please try again.', 'error');
     } finally {
       setIsUploading(false);
     }
