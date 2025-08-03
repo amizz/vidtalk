@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Play, Clock, CheckCircle, Loader, AlertCircle } from 'lucide-react';
+import { Play, Clock, CheckCircle, Loader, AlertCircle, Trash2 } from 'lucide-react';
 
 interface Video {
   id: string;
@@ -13,9 +13,10 @@ interface Video {
 
 interface VideoCardProps {
   video: Video;
+  onDelete?: (videoId: string) => void;
 }
 
-export default function VideoCard({ video }: VideoCardProps) {
+export default function VideoCard({ video, onDelete }: VideoCardProps) {
   const getStatusBadge = () => {
     switch (video.status) {
       case 'transcribed':
@@ -43,10 +44,11 @@ export default function VideoCard({ video }: VideoCardProps) {
   };
 
   return (
-    <Link
-      to={`/videos/${video.id}`}
-      className="block bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden group hover:scale-[1.02]"
-    >
+    <div className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden group hover:scale-[1.02]">
+      <Link
+        to={`/videos/${video.id}`}
+        className="block"
+      >
       <div className="relative aspect-video bg-gray-200 dark:bg-gray-700">
         <img
           src={video.thumbnail}
@@ -76,6 +78,20 @@ export default function VideoCard({ video }: VideoCardProps) {
           {getStatusBadge()}
         </div>
       </div>
-    </Link>
+      </Link>
+      {onDelete && (
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onDelete(video.id);
+          }}
+          className="absolute top-2 right-2 p-2 bg-white/20 dark:bg-black/20 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-500 hover:text-white"
+          title="Delete video"
+        >
+          <Trash2 className="w-4 h-4" />
+        </button>
+      )}
+    </div>
   );
 }
