@@ -1,0 +1,11 @@
+# R2 Configuration
+# Copy this file to .dev.vars and fill in your actual values
+# You'll need to create an R2 API token with read/write access to your bucket
+# Get these from: https://dash.cloudflare.com/profile/api-tokens
+
+# Your Cloudflare account ID
+CLOUDFLARE_ACCOUNT_ID=your-account-id-here
+
+# R2 Access Keys
+R2_ACCESS_KEY_ID=your-r2-access-key-id
+R2_SECRET_ACCESS_KEY=your-r2-secret-access-key

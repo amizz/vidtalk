@@ -1,0 +1,20 @@
+.DS_Store
+/node_modules/
+*.tsbuildinfo
+.claude/
+
+# React Router
+/.react-router/
+/build/
+
+# Cloudflare
+.mf
+.wrangler
+.dev.vars*
+
+
+!.dev.vars.example
+.env*
+!.env.example
+
+wrangler.jsonc
