@@ -1,0 +1,31 @@
+# Binaries
+video-thumbnail
+video-thumbnail-*
+*.exe
+
+# Test files
+*.mp4
+*.jpg
+*.png
+
+# Go
+vendor/
+*.test
+*.out
+
+# Docker
+.dockerignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+/tmp/
+*.tmp
