@@ -17,7 +17,6 @@ function VideosLayoutContent() {
 }
 
 export default function VideosLayout() {
-  console.log('VideosLayout rendering');
   return (
     <ToastProvider>
       <SidebarProvider>

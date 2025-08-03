@@ -7,7 +7,7 @@
     "app/**/.client/**/*",
     "workers/**/*",
     "worker-configuration.d.ts",
-    "app/sql.d.ts"
+    "app/types/sql.d.ts"
   ],
   "compilerOptions": {
     "composite": true,

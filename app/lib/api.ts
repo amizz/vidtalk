@@ -81,6 +81,59 @@ export class VidTalkAPI {
     return { status: "processing" };
   }
 
+  async generateThumbnail(videoKey: string) {
+    // Generate thumbnail key in the same folder as the video
+    const pathParts = videoKey.split("/");
+    const filename = pathParts[pathParts.length - 1];
+    const nameWithoutExt = filename.substring(0, filename.lastIndexOf("."));
+    const thumbnailKey = pathParts
+      .slice(0, -1)
+      .concat(`${nameWithoutExt}_thumb.jpg`)
+      .join("/");
+
+    try {
+      // Get the container instance
+      const containerId = this.env.VIDEO_THUMBNAIL.idFromName(videoKey);
+      const container = this.env.VIDEO_THUMBNAIL.get(containerId);
+
+      // Create request to container
+      const request = new Request("http://localhost:8080/thumbnail", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          videoKey,
+          thumbnailKey,
+          width: 640,
+          height: 360,
+        }),
+      });
+
+      // Call the container
+      const response = await container.containerFetch(request);
+
+      if (!response.ok) {
+        throw new Error(`Thumbnail generation failed: ${response.statusText}`);
+      }
+
+      const result = (await response.json()) as {
+        success: boolean;
+        thumbnailKey?: string;
+        error?: string;
+      };
+
+      if (result.success && result.thumbnailKey) {
+        return { thumbnailKey: result.thumbnailKey, status: "success" };
+      } else {
+        throw new Error(result.error || "Unknown error");
+      }
+    } catch (error) {
+      console.error("Thumbnail generation error:", error);
+      return { thumbnailKey: null, status: "failed" };
+    }
+  }
+
   async getVideoProcessingStatus(videoId: string) {
     const id = this.env.VIDEO_PROCESSOR.idFromName(videoId);
     const stub = this.env.VIDEO_PROCESSOR.get(id);

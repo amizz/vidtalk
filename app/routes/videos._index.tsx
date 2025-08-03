@@ -10,11 +10,13 @@ import type { LoaderFunctionArgs } from "react-router";
 interface Video {
   id: string;
   title: string;
-  thumbnail: string;
+  thumbnail?: string;
+  thumbnailKey?: string;
   duration: string;
   uploadDate: string;
   status: 'transcribed' | 'processing' | 'failed';
   r2Key?: string;
+  url?: string;
 }
 
 interface LoaderData {
@@ -80,7 +82,7 @@ export default function VideosIndex() {
     const formData = new FormData();
     formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
     formData.append('filename', file.name);
-    formData.append('url', `/r2/${r2Key}`);
+    formData.append('url', r2Key); // Store the actual R2 key
     formData.append('description', '');
     
     try {

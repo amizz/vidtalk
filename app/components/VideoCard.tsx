@@ -1,14 +1,18 @@
 import { Link } from 'react-router';
 import { Play, Clock, CheckCircle, Loader, AlertCircle, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import ThumbnailPlaceholder from './ThumbnailPlaceholder';
 
 interface Video {
   id: string;
   title: string;
-  thumbnail: string;
+  thumbnail?: string;
+  thumbnailKey?: string;
   duration: string;
   uploadDate: string;
   status: 'transcribed' | 'processing' | 'failed';
   r2Key?: string;
+  url?: string;
 }
 
 interface VideoCardProps {
@@ -17,6 +21,67 @@ interface VideoCardProps {
 }
 
 export default function VideoCard({ video, onDelete }: VideoCardProps) {
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(null);
+  const [thumbnailLoading, setThumbnailLoading] = useState(true);
+  const [thumbnailError, setThumbnailError] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    let retryCount = 0;
+    const maxRetries = 10;
+    const retryDelay = 3000; // 3 seconds
+
+    const checkThumbnail = async () => {
+      // If we have a thumbnail URL already, use it
+      if (video.thumbnail) {
+        setThumbnailUrl(video.thumbnail);
+        setThumbnailLoading(false);
+        return;
+      }
+
+      // If video is processing, keep checking for thumbnail
+      if (video.status === 'processing' || !video.thumbnailKey) {
+        // Generate expected thumbnail key based on video URL
+        const videoKey = video.url || video.r2Key || '';
+        const expectedThumbnailKey = videoKey.replace(/\.[^/.]+$/, '_thumb.jpg');
+        
+        try {
+          const response = await fetch(`/api/thumbnail/${encodeURIComponent(expectedThumbnailKey)}`);
+          if (response.ok) {
+            const data = await response.json() as { url?: string; key?: string; exists?: boolean };
+            if (mounted && data.url) {
+              setThumbnailUrl(data.url);
+              setThumbnailLoading(false);
+            }
+          } else if (response.status === 404 && retryCount < maxRetries) {
+            // Thumbnail not ready yet, retry
+            retryCount++;
+            setTimeout(() => {
+              if (mounted) checkThumbnail();
+            }, retryDelay);
+          } else {
+            // Give up after max retries
+            if (mounted) {
+              setThumbnailError(true);
+              setThumbnailLoading(false);
+            }
+          }
+        } catch (error) {
+          console.error('Error checking thumbnail:', error);
+          if (mounted) {
+            setThumbnailError(true);
+            setThumbnailLoading(false);
+          }
+        }
+      }
+    };
+
+    checkThumbnail();
+
+    return () => {
+      mounted = false;
+    };
+  }, [video]);
   const getStatusBadge = () => {
     switch (video.status) {
       case 'transcribed':
@@ -50,11 +115,19 @@ export default function VideoCard({ video, onDelete }: VideoCardProps) {
         className="block"
       >
       <div className="relative aspect-video bg-gray-200 dark:bg-gray-700">
-        <img
-          src={video.thumbnail}
-          alt={video.title}
-          className="w-full h-full object-cover"
-        />
+        {thumbnailUrl ? (
+          <img
+            src={thumbnailUrl}
+            alt={video.title}
+            className="w-full h-full object-cover"
+            onError={() => {
+              setThumbnailError(true);
+              setThumbnailUrl(null);
+            }}
+          />
+        ) : (
+          <ThumbnailPlaceholder isLoading={thumbnailLoading} error={thumbnailError} />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">

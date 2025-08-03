@@ -203,6 +203,7 @@ func handleThumbnail(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Download video
+	log.Printf("Downloading video %s", req.VideoKey)
 	videoPath, err := downloadVideo(ctx, req.VideoKey)
 	if err != nil {
 		respondWithError(w, fmt.Sprintf("Failed to download video: %v", err), http.StatusInternalServerError)
@@ -211,6 +212,7 @@ func handleThumbnail(w http.ResponseWriter, r *http.Request) {
 	defer os.Remove(videoPath)
 
 	// Generate thumbnails
+	log.Printf("Generating %d thumbnails", req.Count)
 	if req.Count > 1 {
 		// Generate multiple thumbnails
 		thumbnailPaths, err := generateMultipleThumbnails(videoPath, req.Count, req.Width, req.Height)

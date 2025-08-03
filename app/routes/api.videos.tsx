@@ -1,13 +1,14 @@
 import { type LoaderFunctionArgs, type ActionFunctionArgs } from "react-router";
 import { VidTalkAPI } from "../lib/api";
+import type { CloudflareContext } from "~/types/types";
 
-export async function loader({ context }: LoaderFunctionArgs) {
+export async function loader({ context }: LoaderFunctionArgs<CloudflareContext>) {
   const api = new VidTalkAPI(context.cloudflare.env);
   const { videos } = await api.getVideos();
   return Response.json({ videos });
 }
 
-export async function action({ request, context }: ActionFunctionArgs) {
+export async function action({ request, context }: ActionFunctionArgs<CloudflareContext>) {
   const api = new VidTalkAPI(context.cloudflare.env);
   
   if (request.method === "POST") {
@@ -27,6 +28,13 @@ export async function action({ request, context }: ActionFunctionArgs) {
     // Trigger video processing
     await api.processVideo(video.id, video.url);
     
+    // Trigger thumbnail generation asynchronously
+    // Extract the R2 key from the URL (remove leading slash if present)
+    const videoKey = video.url.startsWith('/') ? video.url.substring(1) : video.url;
+    const r2Key = videoKey.replace(/^r2\//, ''); // Remove 'r2/' prefix if present
+    
+    context.cloudflare.ctx.waitUntil(api.generateThumbnail(r2Key));
+
     return Response.json(result);
   }
   

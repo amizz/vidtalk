@@ -9,6 +9,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const formData = await request.formData();
   const fileName = formData.get("fileName") as string;
   const fileType = formData.get("fileType") as string;
+  const id = formData.get("id") as string;
 
   if (!fileName || !fileType) {
     return Response.json({ error: "Missing fileName or fileType" }, { status: 400 });
@@ -32,7 +33,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   // Generate unique key for the video
   const timestamp = Date.now();
-  const key = `videos/${timestamp}-${fileName}`;
+  const key = `videos/${id}/${timestamp}-${fileName}`;
 
   // Create presigned URL
   const bucketName = "vidtalk";

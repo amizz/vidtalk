@@ -5,6 +5,7 @@ export default [
   route("api/videos", "routes/api.videos.tsx"),
   route("api/videos/:id", "routes/api.videos.$id.tsx"),
   route("api/upload-url", "routes/api.upload-url.tsx"),
+  route("api/thumbnail/:key", "routes/api.thumbnail.$key.tsx"),
   ...prefix("videos", [
     layout("routes/videos.tsx", [
       index("routes/videos._index.tsx"),
