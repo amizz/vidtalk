@@ -3,6 +3,8 @@ import { type RouteConfig, index, layout, route, prefix } from "@react-router/de
 export default [
   index("routes/home.tsx"),
   route("api/videos", "routes/api.videos.tsx"),
+  route("api/videos/:id", "routes/api.videos.$id.tsx"),
+  route("api/upload-url", "routes/api.upload-url.tsx"),
   ...prefix("videos", [
     layout("routes/videos.tsx", [
       index("routes/videos._index.tsx"),

@@ -1,44 +1,48 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router";
+import { useSearchParams, useLoaderData, useFetcher } from "react-router";
 import VideoCard from "~/components/VideoCard";
 import { VideoUploadModal } from "~/components/VideoUploadModal";
-import { Search, Upload, Menu } from "lucide-react";
+import { Search, Upload, Menu, Loader2 } from "lucide-react";
 import { useSidebar } from "~/contexts/SidebarContext";
+import { useToast } from "~/contexts/ToastContext";
+import type { LoaderFunctionArgs } from "react-router";
 
-const mockVideos = [
-  {
-    id: "1",
-    title: "Getting Started with React Router v7",
-    thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300&h=200&fit=crop",
-    duration: "12:34",
-    uploadDate: "2024-01-15",
-    status: "transcribed" as const,
-  },
-  {
-    id: "2",
-    title: "Building Modern Web Apps",
-    thumbnail: "https://images.unsplash.com/photo-1619410283995-43d9134e7656?w=300&h=200&fit=crop",
-    duration: "8:45",
-    uploadDate: "2024-01-14",
-    status: "processing" as const,
-  },
-  {
-    id: "3",
-    title: "AI and the Future of Development",
-    thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=200&fit=crop",
-    duration: "15:20",
-    uploadDate: "2024-01-13",
-    status: "transcribed" as const,
-  },
-];
+interface Video {
+  id: string;
+  title: string;
+  thumbnail: string;
+  duration: string;
+  uploadDate: string;
+  status: 'transcribed' | 'processing' | 'failed';
+  r2Key?: string;
+}
+
+interface LoaderData {
+  videos: Video[];
+}
+
+export async function loader({ request }: LoaderFunctionArgs): Promise<LoaderData> {
+  try {
+    const response = await fetch(new URL('/api/videos', request.url));
+    const data = await response.json() as { videos: Video[] };
+    return { videos: data.videos || [] };
+  } catch (error) {
+    console.error('Failed to load videos:', error);
+    return { videos: [] };
+  }
+}
 
 export default function VideosIndex() {
   console.log('VideosIndex component rendering');
+  const { videos: initialVideos } = useLoaderData<LoaderData>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
-  const [videos, setVideos] = useState(mockVideos);
+  const [videos, setVideos] = useState(initialVideos);
+  const [isLoading, setIsLoading] = useState(false);
   const { setIsOpen } = useSidebar();
+  const fetcher = useFetcher();
+  const { showToast } = useToast();
   
   useEffect(() => {
     if (searchParams.get("upload") === "true") {
@@ -48,26 +52,76 @@ export default function VideosIndex() {
     }
   }, [searchParams, setSearchParams]);
   
-  const filteredVideos = videos.filter(video =>
+  useEffect(() => {
+    setVideos(initialVideos);
+  }, [initialVideos]);
+  
+  // Refresh videos list
+  const refreshVideos = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/videos');
+      const data = await response.json() as { videos: Video[] };
+      setVideos(data.videos || []);
+    } catch (error) {
+      console.error('Failed to refresh videos:', error);
+      showToast('Failed to refresh videos', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  const filteredVideos = videos.filter((video: Video) =>
     video.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleVideoUpload = (file: File, r2Key: string) => {
-    // Add new video to the list
-    const newVideo = {
-      id: Date.now().toString(),
-      title: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
-      thumbnail: `/api/video/${r2Key}/thumbnail`, // We'll need to implement thumbnail generation
-      duration: "0:00", // Will be updated after processing
-      uploadDate: new Date().toISOString().split('T')[0],
-      status: "processing" as const,
-      r2Key: r2Key,
-    };
+  const handleVideoUpload = async (file: File, r2Key: string) => {
+    // Create video record via API
+    const formData = new FormData();
+    formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
+    formData.append('filename', file.name);
+    formData.append('url', `/r2/${r2Key}`);
+    formData.append('description', '');
     
-    setVideos(prev => [newVideo, ...prev]);
+    try {
+      const response = await fetch('/api/videos', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (response.ok) {
+        // Refresh the videos list
+        await refreshVideos();
+        showToast('Video uploaded successfully', 'success');
+      } else {
+        console.error('Failed to create video record');
+        showToast('Failed to create video record', 'error');
+      }
+    } catch (error) {
+      console.error('Error creating video:', error);
+      showToast('Error uploading video', 'error');
+    }
+  };
+  
+  const handleDeleteVideo = async (videoId: string) => {
+    if (!confirm('Are you sure you want to delete this video?')) return;
     
-    // TODO: Trigger video processing via Durable Object
-    console.log('Video uploaded with R2 key:', r2Key);
+    try {
+      const response = await fetch(`/api/videos/${videoId}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        setVideos((prev: Video[]) => prev.filter((v: Video) => v.id !== videoId));
+        showToast('Video deleted successfully', 'success');
+      } else {
+        console.error('Failed to delete video');
+        showToast('Failed to delete video', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      showToast('Error deleting video', 'error');
+    }
   };
 
   return (
@@ -90,13 +144,23 @@ export default function VideosIndex() {
               Manage and chat with your video collection
             </p>
           </div>
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-          >
-            <Upload className="w-5 h-5" />
-            Upload Video
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={refreshVideos}
+              disabled={isLoading}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors disabled:opacity-50"
+              title="Refresh videos"
+            >
+              <Loader2 className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+            </button>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+            >
+              <Upload className="w-5 h-5" />
+              Upload Video
+            </button>
+          </div>
         </div>
 
         <div className="relative mb-8 max-w-2xl">
@@ -116,8 +180,12 @@ export default function VideosIndex() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredVideos.map((video) => (
-              <VideoCard key={video.id} video={video} />
+            {filteredVideos.map((video: Video) => (
+              <VideoCard 
+                key={video.id} 
+                video={video}
+                onDelete={() => handleDeleteVideo(video.id)}
+              />
             ))}
           </div>
         )}

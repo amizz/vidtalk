@@ -1,6 +1,7 @@
 import { Outlet } from "react-router";
 import Sidebar from "~/components/Sidebar";
 import { SidebarProvider, useSidebar } from "~/contexts/SidebarContext";
+import { ToastProvider } from "~/contexts/ToastContext";
 
 function VideosLayoutContent() {
   const { isOpen } = useSidebar();
@@ -18,8 +19,10 @@ function VideosLayoutContent() {
 export default function VideosLayout() {
   console.log('VideosLayout rendering');
   return (
-    <SidebarProvider>
-      <VideosLayoutContent />
-    </SidebarProvider>
+    <ToastProvider>
+      <SidebarProvider>
+        <VideosLayoutContent />
+      </SidebarProvider>
+    </ToastProvider>
   );
 }

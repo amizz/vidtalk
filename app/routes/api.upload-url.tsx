@@ -35,7 +35,7 @@ export async function action({ request, context }: ActionFunctionArgs) {
   const key = `videos/${timestamp}-${fileName}`;
 
   // Create presigned URL
-  const bucketName = "vidtalk-videos";
+  const bucketName = "vidtalk";
   const url = new URL(
     `https://${bucketName}.${accountId}.r2.cloudflarestorage.com/${key}`
   );
