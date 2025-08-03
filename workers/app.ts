@@ -12,6 +12,7 @@ declare module "react-router" {
 export { VidTalkDatabase, VideoProcessor, ChatSession } from "../app/db/durable-objects";
 export { VideoConverterContainer } from "../app/lib/video-converter-container";
 export { VideoThumbnailContainer } from "../app/lib/video-thumbnail-container";
+// export { ProcessVideoWorkflow } from "../app/workflows/process-video-wf";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
