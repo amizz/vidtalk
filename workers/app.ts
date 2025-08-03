@@ -10,6 +10,8 @@ declare module "react-router" {
 }
 
 export { VidTalkDatabase, VideoProcessor, ChatSession } from "../app/db/durable-objects";
+export { VideoConverterContainer } from "../app/lib/video-converter-container";
+export { VideoThumbnailContainer } from "../app/lib/video-thumbnail-container";
 
 const requestHandler = createRequestHandler(
   () => import("virtual:react-router/server-build"),
