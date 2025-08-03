@@ -26,7 +26,7 @@ export class VidTalkDatabase extends DurableObject {
   }
 
   async getVideos() {
-    return await this.db.select().from(schema.videos).all();
+    return this.db.select().from(schema.videos).all();
   }
 
   async createVideo(data: {
@@ -40,11 +40,15 @@ export class VidTalkDatabase extends DurableObject {
     uploadedAt: Date;
     processedAt?: Date;
   }) {
-    return await this.db.insert(schema.videos).values(data).returning().get();
+    return this.db.insert(schema.videos).values(data).returning().get();
+  }
+
+  async deleteVideo(id: string) {
+    return this.db.delete(schema.videos).where(eq(schema.videos.id, id)).returning().get();
   }
 
   async getVideo(id: string) {
-    return await this.db.select().from(schema.videos).where(eq(schema.videos.id, id)).get();
+    return this.db.select().from(schema.videos).where(eq(schema.videos.id, id)).get();
   }
 
   async createTranscript(data: {
@@ -54,7 +58,7 @@ export class VidTalkDatabase extends DurableObject {
     language?: string;
     createdAt: Date;
   }) {
-    return await this.db.insert(schema.transcripts).values(data).returning().get();
+    return this.db.insert(schema.transcripts).values(data).returning().get();
   }
 
   async createTranscriptSegment(data: {
@@ -67,11 +71,11 @@ export class VidTalkDatabase extends DurableObject {
     confidence?: number;
     order: number;
   }) {
-    return await this.db.insert(schema.transcriptSegments).values(data).returning().get();
+    return this.db.insert(schema.transcriptSegments).values(data).returning().get();
   }
 
   async getTranscriptSegments(transcriptId: string) {
-    return await this.db.select()
+    return this.db.select()
       .from(schema.transcriptSegments)
       .where(eq(schema.transcriptSegments.transcriptId, transcriptId))
       .orderBy(asc(schema.transcriptSegments.order))

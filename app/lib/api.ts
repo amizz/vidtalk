@@ -2,7 +2,7 @@ export class VidTalkAPI {
   constructor(private env: Env) {}
 
   private async getDatabaseStub() {
-    const id = this.env.DATABASE.idFromName('main');
+    const id = this.env.DATABASE.idFromName("main");
     return this.env.DATABASE.get(id);
   }
 
@@ -24,9 +24,15 @@ export class VidTalkAPI {
     const stub = await this.getDatabaseStub();
     const video = await stub.createVideo({
       ...data,
-      status: 'processing',
+      status: "processing",
     });
     return { video };
+  }
+
+  async deleteVideo(id: string) {
+    const stub = await this.getDatabaseStub();
+    await stub.deleteVideo(id);
+    return { success: true };
   }
 
   async getVideo(id: string) {
@@ -72,7 +78,7 @@ export class VidTalkAPI {
     const id = this.env.VIDEO_PROCESSOR.idFromName(videoId);
     const stub = this.env.VIDEO_PROCESSOR.get(id);
     await stub.processVideo(videoId, videoUrl);
-    return { status: 'processing' };
+    return { status: "processing" };
   }
 
   async getVideoProcessingStatus(videoId: string) {
