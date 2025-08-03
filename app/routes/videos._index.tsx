@@ -35,7 +35,6 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<LoaderDat
 }
 
 export default function VideosIndex() {
-  console.log('VideosIndex component rendering');
   const { videos: initialVideos } = useLoaderData<LoaderData>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchQuery, setSearchQuery] = useState("");
@@ -77,13 +76,14 @@ export default function VideosIndex() {
     video.title.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const handleVideoUpload = async (file: File, r2Key: string) => {
+  const handleVideoUpload = async (file: File, r2Key: string, id: string) => {
     // Create video record via API
     const formData = new FormData();
     formData.append('title', file.name.replace(/\.[^/.]+$/, ''));
     formData.append('filename', file.name);
     formData.append('url', r2Key); // Store the actual R2 key
     formData.append('description', '');
+    formData.append('id', id);
     
     try {
       const response = await fetch('/api/videos', {

@@ -14,7 +14,7 @@ export async function action({ request, context }: ActionFunctionArgs<Cloudflare
   if (request.method === "POST") {
     const formData = await request.formData();
     const video = {
-      id: crypto.randomUUID(),
+      id: formData.get("id") as string,
       title: formData.get("title") as string,
       description: formData.get("description") as string,
       filename: formData.get("filename") as string,
@@ -25,8 +25,8 @@ export async function action({ request, context }: ActionFunctionArgs<Cloudflare
     
     const result = await api.createVideo(video);
     
-    // Trigger video processing
-    await api.processVideo(video.id, video.url);
+    // Trigger video processing with R2 key (video.url is already the R2 key)
+    context.cloudflare.ctx.waitUntil(api.processVideo(video.id, video.url));
     
     // Trigger thumbnail generation asynchronously
     // Extract the R2 key from the URL (remove leading slash if present)

@@ -33,7 +33,9 @@ export async function action({ request, context }: ActionFunctionArgs) {
 
   // Generate unique key for the video
   const timestamp = Date.now();
-  const key = `videos/${id}/${timestamp}-${fileName}`;
+  // Remove all symbols, spaces, and special characters except dot (.) from the filename
+  const normalizedFileName = fileName.replace(/[^a-zA-Z0-9.]/g, "");
+  const key = `videos/${id}/${timestamp}-${normalizedFileName}`;
 
   // Create presigned URL
   const bucketName = "vidtalk";

@@ -1,9 +1,43 @@
 import { useState } from "react";
-import { useParams, Link } from "react-router";
+import { useParams, Link, useLoaderData, useNavigate } from "react-router";
 import { VideoPlayer } from "~/components/VideoPlayer";
 import { TranscriptViewer } from "~/components/TranscriptViewer";
 import { ChatMessage } from "~/components/ChatMessage";
-import { ArrowLeft, Send, X, MessageCircle } from "lucide-react";
+import { ArrowLeft, Send, X, MessageCircle, Trash2 } from "lucide-react";
+import { useToast } from "~/contexts/ToastContext";
+import type { LoaderFunctionArgs } from "react-router";
+import type { CloudflareContext } from "~/types/types";
+
+interface Video {
+  id: string;
+  title: string;
+  thumbnail?: string;
+  thumbnailKey?: string;
+  duration: string;
+  uploadDate: string;
+  status: 'transcribed' | 'processing' | 'failed';
+  r2Key?: string;
+  url?: string;
+}
+
+interface LoaderData {
+  video: Video | null;
+  videoUrl: string | null;
+}
+
+export async function loader({ params, request, context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
+  try {
+    const response = await fetch(new URL(`/api/videos/${params.id}`, request.url));
+    if (!response.ok) {
+      return { video: null, videoUrl: null };
+    }
+    const data = await response.json() as { video: Video };
+    return { video: data.video, videoUrl: `${context.cloudflare.env.R2_PUBLIC_URL}/${data.video.url}` };
+  } catch (error) {
+    console.error('Failed to load video:', error);
+    return { video: null, videoUrl: null };
+  }
+}
 
 const mockTranscript = [
   { timestamp: 0, text: "Welcome to this tutorial on React Router v7." },
@@ -27,23 +61,59 @@ const mockMessages = [
   },
 ];
 
-// Mock video data - in a real app, this would come from your database
-const mockVideos: Record<string, { title: string; r2Key?: string }> = {
-  "1": { title: "Getting Started with React Router v7", r2Key: "videos/sample1.mp4" },
-  "2": { title: "Building Modern Web Apps" },
-  "3": { title: "AI and the Future of Development" },
-};
-
 export default function VideoDetail() {
   const { id } = useParams();
-  console.log('VideoDetail component rendering, id:', id);
+  const navigate = useNavigate();
+  const { showToast } = useToast();
+  const { video, videoUrl } = useLoaderData<LoaderData>();
+  
   const [messages, setMessages] = useState(mockMessages);
   const [inputMessage, setInputMessage] = useState("");
   const [currentTime, setCurrentTime] = useState(0);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   
-  const video = mockVideos[id || ""] || { title: "Video Not Found" };
-  const videoUrl = video.r2Key ? `/api/video/${video.r2Key}` : undefined;
+  if (!video) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Video Not Found
+          </h1>
+          <Link
+            to="/videos"
+            className="text-blue-600 hover:text-blue-700 dark:text-blue-400"
+          >
+            Back to Library
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const handleDeleteVideo = async () => {
+    if (!confirm('Are you sure you want to delete this video?')) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/videos/${video.id}`, {
+        method: 'DELETE',
+      });
+      
+      if (response.ok) {
+        showToast('Video deleted successfully', 'success');
+        navigate('/videos');
+      } else {
+        console.error('Failed to delete video');
+        showToast('Failed to delete video', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting video:', error);
+      showToast('Error deleting video', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,7 +150,7 @@ export default function VideoDetail() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 shadow-sm z-10">
-          <div className="px-4 py-3 sm:px-6">
+          <div className="px-4 py-3 sm:px-6 flex items-center justify-between">
             <Link
               to="/videos"
               className="inline-flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
@@ -88,6 +158,15 @@ export default function VideoDetail() {
               <ArrowLeft className="w-4 h-4" />
               Back to Library
             </Link>
+            <button
+              onClick={handleDeleteVideo}
+              disabled={isDeleting}
+              className="inline-flex items-center gap-2 px-3 py-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50"
+              title="Delete video"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span className="hidden sm:inline">Delete Video</span>
+            </button>
           </div>
         </div>
 
@@ -97,7 +176,7 @@ export default function VideoDetail() {
             {/* Video player with aspect ratio container */}
             <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
               <VideoPlayer
-                videoUrl={videoUrl}
+                videoUrl={videoUrl || undefined}
                 title={video.title}
                 onTimeUpdate={setCurrentTime}
               />

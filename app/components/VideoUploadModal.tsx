@@ -5,7 +5,7 @@ import { useToast } from '~/contexts/ToastContext';
 interface VideoUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onUpload: (file: File, r2Key: string) => void;
+  onUpload: (file: File, r2Key: string, id: string) => void;
 }
 
 export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModalProps) {
@@ -56,9 +56,11 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
     
     try {
       // Get presigned URL from server
+      const id = crypto.randomUUID();
       const formData = new FormData();
       formData.append('fileName', selectedFile.name);
       formData.append('fileType', selectedFile.type);
+      formData.append('id', id);
       
       const response = await fetch('/api/upload-url', {
         method: 'POST',
@@ -85,7 +87,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
       }
       
       // Notify parent component of successful upload
-      await onUpload(selectedFile, key);
+      await onUpload(selectedFile, key, id);
       
       setSelectedFile(null);
       onClose();
