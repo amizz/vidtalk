@@ -30,16 +30,3 @@ export const transcriptSegments = sqliteTable('transcript_segments', {
   confidence: real('confidence'),
   order: integer('order').notNull(),
 });
-
-export const collections = sqliteTable('collections', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  description: text('description'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-});
-
-export const collectionVideos = sqliteTable('collection_videos', {
-  collectionId: text('collection_id').notNull().references(() => collections.id),
-  videoId: text('video_id').notNull().references(() => videos.id),
-  addedAt: integer('added_at', { mode: 'timestamp' }).notNull(),
-});
