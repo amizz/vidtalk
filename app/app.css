@@ -9,13 +9,9 @@
   color-scheme: light;
 }
 
-:root.dark {
-  color-scheme: dark;
-}
-
 html,
 body {
-  @apply bg-white dark:bg-gray-950;
+  @apply bg-white;
 }
 
 .line-clamp-1 {

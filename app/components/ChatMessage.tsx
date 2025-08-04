@@ -23,7 +23,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
         isUser 
           ? 'bg-blue-600 text-white' 
-          : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400'
+          : 'bg-gray-200 text-gray-600'
       }`}>
         {isUser ? <User className="w-5 h-5" /> : <Bot className="w-5 h-5" />}
       </div>
@@ -32,12 +32,12 @@ export function ChatMessage({ message }: ChatMessageProps) {
         <div className={`inline-block px-4 py-2 rounded-lg ${
           isUser 
             ? 'bg-blue-600 text-white' 
-            : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100'
+            : 'bg-gray-100 text-gray-900'
         }`}>
           {isUser ? (
             <p className="text-sm whitespace-pre-wrap">{message.content}</p>
           ) : (
-            <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+            <div className="text-sm prose prose-sm max-w-none">
               <ReactMarkdown 
                 components={{
                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -50,19 +50,19 @@ export function ChatMessage({ message }: ChatMessageProps) {
                   code: ({ node, className, children, ...props }) => {
                     const match = /language-(\w+)/.exec(className || '')
                     return match ? (
-                      <pre className="bg-gray-200 dark:bg-gray-700 p-2 rounded overflow-x-auto mb-2">
+                      <pre className="bg-gray-200 p-2 rounded overflow-x-auto mb-2">
                         <code className="text-xs" {...props}>
                           {children}
                         </code>
                       </pre>
                     ) : (
-                      <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded text-xs" {...props}>
+                      <code className="bg-gray-200 px-1 py-0.5 rounded text-xs" {...props}>
                         {children}
                       </code>
                     )
                   },
                   pre: ({ children }) => <>{children}</>,
-                  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 dark:border-gray-600 pl-2 italic">{children}</blockquote>,
+                  blockquote: ({ children }) => <blockquote className="border-l-2 border-gray-300 pl-2 italic">{children}</blockquote>,
                   a: ({ href, children }) => <a href={href} className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">{children}</a>,
                   strong: ({ children }) => <strong className="font-bold">{children}</strong>,
                   em: ({ children }) => <em className="italic">{children}</em>,
@@ -88,7 +88,7 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
         
-        <p className={`text-xs text-gray-500 dark:text-gray-400 mt-1 ${
+        <p className={`text-xs text-gray-500 mt-1 ${
           isUser ? 'text-right' : ''
         }`}>
           {message.timestamp.toLocaleTimeString()}

@@ -6,8 +6,6 @@ import {
   Settings, 
   Menu,
   X,
-  Moon,
-  Sun,
   ChevronLeft,
   ChevronRight,
   Upload,
@@ -23,16 +21,14 @@ import { useSidebar } from '~/contexts/SidebarContext';
 export default function Sidebar() {
   const location = useLocation();
   const { isOpen, setIsOpen } = useSidebar();
-  const [darkMode, setDarkMode] = useState(false);
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const navItems = [
+  const navItems: { id: string; label: string; icon: React.ReactNode; href: string, badge?: string }[] = [
     {
       id: 'library',
       label: 'Video Library',
       icon: <Library className="w-5 h-5" />,
-      href: '/videos',
-      badge: '3'
+      href: '/videos'
     },
     {
       id: 'collection-chat',
@@ -82,13 +78,13 @@ export default function Sidebar() {
       <aside 
         className={`${
           isOpen ? 'w-72' : 'w-20'
-        } bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-800 
-        border-r border-gray-200 dark:border-gray-700 transition-all duration-300 
+        } bg-gradient-to-b from-gray-50 to-white 
+        border-r border-gray-200 transition-all duration-300 
         flex flex-col fixed top-0 h-screen z-40 shadow-xl
         ${isOpen ? 'left-0' : '-left-72 md:left-0'}`}
       >
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <Link to="/" className={`flex items-center gap-3 ${!isOpen && 'justify-center'}`}>
             {isOpen ? (
@@ -97,10 +93,10 @@ export default function Sidebar() {
                   <Zap className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="font-bold text-xl bg-gradient-to-r from-blue-600 to-teal-600 dark:from-blue-400 dark:to-teal-400 bg-clip-text text-transparent">
+                  <h1 className="font-bold text-xl bg-gradient-to-r from-blue-600 to-teal-600 bg-clip-text text-transparent">
                     VidTalk
                   </h1>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">AI-Powered Videos</p>
+                  <p className="text-xs text-gray-500">AI-Powered Videos</p>
                 </div>
               </>
             ) : (
@@ -112,7 +108,7 @@ export default function Sidebar() {
           
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 
                      hover:scale-110 active:scale-95 hidden md:flex"
           >
             {isOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
@@ -120,7 +116,7 @@ export default function Sidebar() {
           
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 
+            className="p-2 hover:bg-gray-100 rounded-lg transition-all duration-200 
                      hover:scale-110 active:scale-95 md:hidden"
           >
             {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -158,8 +154,8 @@ export default function Sidebar() {
                 className={`w-full relative flex items-center gap-3 px-3 py-3 rounded-xl 
                            transition-all duration-200 group
                            ${isActive 
-                             ? 'bg-gradient-to-r from-blue-50 to-teal-50 dark:from-blue-900/20 dark:to-teal-900/20 text-blue-600 dark:text-blue-400' 
-                             : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                             ? 'bg-gradient-to-r from-blue-50 to-teal-50 text-blue-600' 
+                             : 'hover:bg-gray-100'
                            }`}
               >
                 {/* Animated background */}
@@ -175,12 +171,12 @@ export default function Sidebar() {
                 
                 {isOpen && (
                   <>
-                    <span className={`relative font-medium ${isActive ? '' : 'text-gray-700 dark:text-gray-300'}`}>
+                    <span className={`relative font-medium ${isActive ? '' : 'text-gray-700'}`}>
                       {item.label}
                     </span>
                     {item.badge && (
-                      <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-gray-200 dark:bg-gray-700 
-                                     text-gray-600 dark:text-gray-400 rounded-full">
+                      <span className="ml-auto px-2 py-0.5 text-xs font-medium bg-gray-200 
+                                     text-gray-600 rounded-full">
                         {item.badge}
                       </span>
                     )}
@@ -189,7 +185,7 @@ export default function Sidebar() {
                 
                 {/* Tooltip for collapsed sidebar */}
                 {!isOpen && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 dark:bg-gray-700 
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-800 
                                  text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 
                                  transition-opacity duration-200 pointer-events-none whitespace-nowrap">
                     {item.label}
@@ -204,7 +200,7 @@ export default function Sidebar() {
         {/* Quick Actions */}
         {isOpen && (
           <div className="mt-8">
-            <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
               Quick Access
             </h3>
             <div className="grid grid-cols-2 gap-2">
@@ -213,8 +209,8 @@ export default function Sidebar() {
                   key={action.id}
                   onClick={action.onClick}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg 
-                           hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200
-                           text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
+                           hover:bg-gray-100 transition-all duration-200
+                           text-sm text-gray-600 hover:text-gray-900"
                 >
                   {action.icon}
                   <span>{action.label}</span>
@@ -226,42 +222,24 @@ export default function Sidebar() {
       </nav>
       
       {/* Footer */}
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 space-y-2">
-        <button
-          onClick={() => setDarkMode(!darkMode)}
-          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl 
-                     hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200
-                     group ${!isOpen && 'justify-center'}`}
-        >
-          <div className="relative">
-            <div className={`absolute inset-0 bg-gradient-to-r from-yellow-400 to-orange-400 
-                           dark:from-blue-400 dark:to-purple-400 rounded-full blur-md opacity-0 
-                           group-hover:opacity-50 transition-opacity duration-300`} />
-            {darkMode ? 
-              <Sun className="w-5 h-5 relative text-yellow-500" /> : 
-              <Moon className="w-5 h-5 relative text-gray-600" />
-            }
-          </div>
-          {isOpen && <span className="text-gray-700 dark:text-gray-300">{darkMode ? 'Light Mode' : 'Dark Mode'}</span>}
-        </button>
-        
+      <div className="p-4 border-t border-gray-200 space-y-2">
         <button className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl 
-                         hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200
+                         hover:bg-gray-100 transition-all duration-200
                          ${!isOpen && 'justify-center'}`}>
-          <Settings className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-          {isOpen && <span className="text-gray-700 dark:text-gray-300">Settings</span>}
+          <Settings className="w-5 h-5 text-gray-600" />
+          {isOpen && <span className="text-gray-700">Settings</span>}
         </button>
 
         {/* User Profile */}
         {isOpen && (
-          <div className="flex items-center gap-3 px-3 py-2 mt-3 rounded-xl bg-gray-100 dark:bg-gray-700">
+          <div className="flex items-center gap-3 px-3 py-2 mt-3 rounded-xl bg-gray-100">
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full 
                           flex items-center justify-center text-white font-medium text-sm">
               U
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">User</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">user@example.com</p>
+              <p className="text-sm font-medium text-gray-900 truncate">User</p>
+              <p className="text-xs text-gray-500 truncate">user@example.com</p>
             </div>
           </div>
         )}

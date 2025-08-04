@@ -101,12 +101,12 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl m-4">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl m-4">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold">Upload Video</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -119,15 +119,15 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
             onDrop={handleDrop}
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               isDragging 
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
-                : 'border-gray-300 dark:border-gray-600'
+                ? 'border-blue-500 bg-blue-50' 
+                : 'border-gray-300'
             }`}
           >
             <FileVideo className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <p className="text-lg mb-2">
               Drag and drop your video here
             </p>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <p className="text-sm text-gray-500 mb-4">
               or
             </p>
             <button
@@ -146,7 +146,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
           </div>
           
           {selectedFile && (
-            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <FileVideo className="w-8 h-8 text-gray-500" />
@@ -159,7 +159,7 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
                 </div>
                 <button
                   onClick={() => setSelectedFile(null)}
-                  className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
+                  className="text-gray-500 hover:text-gray-700"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -168,10 +168,10 @@ export function VideoUploadModal({ isOpen, onClose, onUpload }: VideoUploadModal
           )}
         </div>
         
-        <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex justify-end gap-3 p-6 border-t border-gray-200">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
           >
             Cancel
           </button>
