@@ -1,17 +1,42 @@
 @import "tailwindcss" source(".");
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif,
+  --font-sans: "Space Mono", monospace, ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  
+  /* Custom font families */
+  --font-family-bungee: "Bungee", cursive;
+  --font-family-bungee-shade: "Bungee Shade", cursive;
+  --font-family-bebas: "Bebas Neue", cursive;
+  --font-family-space-mono: "Space Mono", monospace;
+  
+  /* Custom colors for Tailwind */
+  --color-retro-orange: #FF6B35;
+  --color-retro-pink: #FF006E;
+  --color-retro-purple: #8338EC;
+  --color-retro-blue: #3A86FF;
+  --color-retro-yellow: #FFBE0B;
+  --color-retro-mint: #00F5FF;
+  --color-retro-cream: #FFF3E0;
+  --color-retro-dark: #1A0033;
 }
 
 :root {
   color-scheme: light;
+  /* Retro Funky Color Palette */
+  --retro-orange: #FF6B35;
+  --retro-pink: #FF006E;
+  --retro-purple: #8338EC;
+  --retro-blue: #3A86FF;
+  --retro-yellow: #FFBE0B;
+  --retro-mint: #00F5FF;
+  --retro-cream: #FFF3E0;
+  --retro-dark: #1A0033;
 }
 
 html,
 body {
-  @apply bg-white;
+  @apply bg-retro-cream;
 }
 
 .line-clamp-1 {
@@ -19,4 +44,87 @@ body {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
+}
+
+/* Retro Animations */
+@keyframes wiggle {
+  0%, 100% { transform: rotate(-3deg); }
+  50% { transform: rotate(3deg); }
+}
+
+@keyframes bounce-in {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes glow {
+  0%, 100% { box-shadow: 0 0 20px var(--retro-pink), 0 0 40px var(--retro-purple); }
+  50% { box-shadow: 0 0 30px var(--retro-mint), 0 0 50px var(--retro-blue); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+}
+
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/* Custom Utility Classes */
+.retro-shadow {
+  box-shadow: 4px 4px 0px var(--retro-dark);
+}
+
+.retro-shadow-lg {
+  box-shadow: 8px 8px 0px var(--retro-dark);
+}
+
+.retro-border {
+  border: 3px solid var(--retro-dark);
+}
+
+.retro-text-shadow {
+  text-shadow: 3px 3px 0px var(--retro-dark);
+}
+
+.retro-gradient {
+  background: linear-gradient(135deg, var(--retro-orange), var(--retro-pink), var(--retro-purple), var(--retro-blue));
+  background-size: 400% 400%;
+  animation: gradient-shift 6s ease infinite;
+}
+
+.wiggle-hover:hover {
+  animation: wiggle 0.5s ease-in-out infinite;
+}
+
+.bounce-in {
+  animation: bounce-in 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.glow {
+  animation: glow 3s ease-in-out infinite;
+}
+
+/* Retro Font Classes using CSS variables */
+.font-bungee {
+  font-family: var(--font-family-bungee);
+}
+
+.font-bungee-shade {
+  font-family: var(--font-family-bungee-shade);
+}
+
+.font-bebas {
+  font-family: var(--font-family-bebas);
+}
+
+.font-space-mono {
+  font-family: var(--font-family-space-mono);
 }
