@@ -20,9 +20,29 @@ interface Video {
   url?: string;
 }
 
+interface TranscriptSegment {
+  id: string;
+  text: string;
+  startTime: number;
+  endTime: number;
+  speaker?: string | null;
+  confidence?: number | null;
+  order: number;
+}
+
 interface LoaderData {
   video: Video | null;
   videoUrl: string | null;
+  transcript: {
+    transcript: {
+      id: string;
+      videoId: string;
+      content: string;
+      language?: string | null;
+      createdAt: Date;
+    };
+    segments: TranscriptSegment[];
+  } | null;
 }
 
 export async function loader({ params, context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
@@ -32,7 +52,7 @@ export async function loader({ params, context }: LoaderFunctionArgs<CloudflareC
     const { video } = await api.getVideo(params.id!);
     
     if (!video) {
-      return { video: null, videoUrl: null };
+      return { video: null, videoUrl: null, transcript: null };
     }
     
     // Transform the API response to match the frontend Video interface
@@ -46,19 +66,26 @@ export async function loader({ params, context }: LoaderFunctionArgs<CloudflareC
       url: video.url
     };
     
-    return { video: transformedVideo, videoUrl: `${context.cloudflare.env.R2_PUBLIC_URL}/${video.url}` };
+    // Fetch transcript data
+    let transcript = null;
+    if (video.status === 'completed' || video.status === 'transcribed') {
+      try {
+        transcript = await api.getTranscriptWithSegments(video.id);
+      } catch (err) {
+        console.error('Failed to load transcript:', err);
+      }
+    }
+    
+    return { 
+      video: transformedVideo, 
+      videoUrl: `${context.cloudflare.env.R2_PUBLIC_URL}/${video.url}`,
+      transcript 
+    };
   } catch (error) {
     console.error('Failed to load video:', error);
-    return { video: null, videoUrl: null };
+    return { video: null, videoUrl: null, transcript: null };
   }
 }
-
-const mockTranscript = [
-  { timestamp: 0, text: "Welcome to this tutorial on React Router v7." },
-  { timestamp: 3, text: "Today we'll explore the new features and improvements." },
-  { timestamp: 7, text: "First, let's talk about the new file-based routing system." },
-  { timestamp: 12, text: "It's now more intuitive and type-safe than ever before." },
-];
 
 const mockMessages = [
   { 
@@ -79,7 +106,7 @@ export default function VideoDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { video, videoUrl } = useLoaderData<LoaderData>();
+  const { video, videoUrl, transcript } = useLoaderData<LoaderData>();
   
   const [messages, setMessages] = useState(mockMessages);
   const [inputMessage, setInputMessage] = useState("");
@@ -200,16 +227,26 @@ export default function VideoDetail() {
               {video.title}
             </h1>
 
-            <TranscriptViewer
-              segments={mockTranscript.map((t, idx) => ({
-                id: idx.toString(),
-                startTime: t.timestamp,
-                endTime: mockTranscript[idx + 1]?.timestamp || t.timestamp + 5,
-                text: t.text
-              }))}
-              currentTime={currentTime}
-              onSegmentClick={handleTimestampClick}
-            />
+            {transcript && transcript.segments.length > 0 ? (
+              <TranscriptViewer
+                segments={transcript.segments.map((segment) => ({
+                  id: segment.id,
+                  startTime: segment.startTime,
+                  endTime: segment.endTime,
+                  text: segment.text
+                }))}
+                currentTime={currentTime}
+                onSegmentClick={handleTimestampClick}
+              />
+            ) : (
+              <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-6 text-center">
+                <p className="text-gray-600 dark:text-gray-400">
+                  {video.status === 'processing' 
+                    ? 'Transcript is being generated...' 
+                    : 'No transcript available for this video'}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

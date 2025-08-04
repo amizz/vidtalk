@@ -171,6 +171,25 @@ export class VidTalkDatabase extends DurableObject {
       .all();
   }
 
+  async getTranscriptByVideoId(videoId: string) {
+    return this.db.select()
+      .from(schema.transcripts)
+      .where(eq(schema.transcripts.videoId, videoId))
+      .get();
+  }
+
+  async getTranscriptWithSegments(videoId: string) {
+    const transcript = await this.getTranscriptByVideoId(videoId);
+    if (!transcript) return null;
+    
+    const segments = await this.getTranscriptSegments(transcript.id);
+    
+    return {
+      transcript,
+      segments
+    };
+  }
+
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
@@ -213,6 +232,17 @@ export class VidTalkDatabase extends DurableObject {
           return new Response('Missing id parameter', { status: 400 });
         }
         const result = await this.getVideo(id);
+        return new Response(JSON.stringify(result), {
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (path === '/getTranscriptWithSegments' && request.method === 'GET') {
+        const videoId = url.searchParams.get('videoId');
+        if (!videoId) {
+          return new Response('Missing videoId parameter', { status: 400 });
+        }
+        const result = await this.getTranscriptWithSegments(videoId);
         return new Response(JSON.stringify(result), {
           headers: { 'Content-Type': 'application/json' },
         });

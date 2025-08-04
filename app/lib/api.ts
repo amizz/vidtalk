@@ -74,6 +74,12 @@ export class VidTalkAPI {
     return { segments };
   }
 
+  async getTranscriptWithSegments(videoId: string) {
+    const stub = await this.getDatabaseStub();
+    const result = await stub.getTranscriptWithSegments(videoId);
+    return result;
+  }
+
   async processVideo(videoId: string, videoUrl: string) {
     const id = this.env.VIDEO_PROCESSOR.idFromName(videoId);
     const stub = this.env.VIDEO_PROCESSOR.get(id);
