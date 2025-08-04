@@ -7,6 +7,7 @@ import { ArrowLeft, Send, X, MessageCircle, Trash2 } from "lucide-react";
 import { useToast } from "~/contexts/ToastContext";
 import type { LoaderFunctionArgs } from "react-router";
 import type { CloudflareContext } from "~/types/types";
+import { VidTalkAPI } from "~/lib/api";
 
 interface Video {
   id: string;
@@ -47,7 +48,6 @@ interface LoaderData {
 
 export async function loader({ params, context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
   try {
-    const { VidTalkAPI } = await import("~/lib/api");
     const api = new VidTalkAPI(context.cloudflare.env);
     const { video } = await api.getVideo(params.id!);
     

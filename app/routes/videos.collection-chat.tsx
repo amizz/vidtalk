@@ -1,39 +1,72 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useFetcher, type ActionFunctionArgs } from "react-router";
 import { ChatMessage } from "~/components/ChatMessage";
 import { ArrowLeft, Send, Film, Sparkles } from "lucide-react";
+import type { CloudflareContext } from "~/types/types";
+import { VidTalkAPI } from "~/lib/api";
 
-const mockMessages = [
-  { 
-    id: "1", 
-    role: "user" as const, 
-    content: "What common themes appear across all my videos?",
-    timestamp: new Date()
-  },
-  { 
-    id: "2", 
-    role: "assistant" as const, 
-    content: "Based on your video collection, I've identified several common themes:\n\n1. **Modern Web Development** - All videos focus on contemporary frameworks and tools\n2. **Developer Experience** - Emphasis on improving productivity and workflow\n3. **AI Integration** - Growing focus on incorporating AI into development\n4. **Performance Optimization** - Consistent attention to speed and efficiency\n\nThese themes suggest you're building a comprehensive resource for modern full-stack development.",
-    timestamp: new Date(),
-    videoReferences: [
-      { videoId: 1, videoTitle: "Getting Started with React Router v7" },
-      { videoId: 3, videoTitle: "AI and the Future of Development" }
-    ]
-  },
-];
+type ActionResponse = {
+  content: string;
+  videoReferences: Array<{
+    videoId: string;
+    videoTitle: string;
+    thumbnailUrl?: string;
+    timestamp?: string;
+  }>;
+};
 
-const referencedVideos = [
-  {
-    id: "1",
-    title: "Getting Started with React Router v7",
-    thumbnail: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=300&h=200&fit=crop",
-  },
-  {
-    id: "3",
-    title: "AI and the Future of Development",
-    thumbnail: "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=200&fit=crop",
-  },
-];
+export async function action({ request, context }: ActionFunctionArgs<CloudflareContext>) {
+  const formData = await request.formData();
+  const query = formData.get("query") as string;
+  
+  const env = context.cloudflare.env;
+  
+  try {
+    const answer = await env.AI.autorag("vidtalk").aiSearch({
+      query: query,
+    });
+    
+    return Response.json({
+      content: answer.response || "I couldn't find relevant information in your video collection.",
+      videoReferences: await Promise.all(answer.data?.map(async (ref) => {
+        // Extract UUID from filename path like "videos/f4b8a2e7-6bb0-4d50-87c6-555a6f14c451/..."
+        const uuidMatch = ref.filename.match(/videos\/([a-f0-9-]+)\//);
+        const videoId = uuidMatch ? uuidMatch[1] : ref.file_id;
+        
+        // Extract video title from filename (remove timestamp prefix and _transcript.txt suffix)
+        const filenameParts = ref.filename.split('/').pop() || '';
+        const titleMatch = filenameParts.match(/^\d+-(.+)_transcript\.txt$/);
+        const videoTitle = titleMatch ? titleMatch[1].replace(/([A-Z])/g, ' $1').trim() : filenameParts;
+
+        const api = new VidTalkAPI(env);
+        const video = await api.getVideo(videoId);
+        
+        // Generate thumbnail URL
+        let thumbnailUrl: string | undefined;
+        if (video?.video?.url) {
+          // Generate expected thumbnail key based on video URL
+          const thumbnailKey = video.video.url.replace(/\.[^/.]+$/, '_thumb.jpg');
+          thumbnailUrl = `${env.R2_PUBLIC_URL}/${thumbnailKey}`;
+        }
+        
+        return {
+          videoId,
+          videoTitle: video?.video?.title || videoTitle,
+          thumbnailUrl,
+          timestamp: ref.attributes?.timestamp as string || undefined
+        };
+      }) || [])
+    });
+  } catch (error) {
+    console.error("AutoRAG error:", error);
+    return Response.json({
+      content: "I'm having trouble searching through your video collection right now. Please try again.",
+      videoReferences: []
+    });
+  }
+}
+
+const mockMessages: Message[] = [];
 
 type Message = {
   id: string;
@@ -41,8 +74,9 @@ type Message = {
   content: string;
   timestamp: Date;
   videoReferences?: Array<{
-    videoId: number;
+    videoId: string | number;
     videoTitle: string;
+    thumbnailUrl?: string;
     timestamp?: string;
   }>;
 };
@@ -50,6 +84,42 @@ type Message = {
 export default function CollectionChat() {
   const [messages, setMessages] = useState<Message[]>(mockMessages);
   const [inputMessage, setInputMessage] = useState("");
+  const fetcher = useFetcher<ActionResponse>();
+  
+  // Extract unique referenced videos from all messages
+  const referencedVideos = useMemo(() => {
+    const videoMap = new Map<string, { id: string; title: string; thumbnail?: string }>();
+    
+    messages.forEach(message => {
+      if (message.videoReferences) {
+        message.videoReferences.forEach(ref => {
+          const id = String(ref.videoId);
+          if (!videoMap.has(id)) {
+            videoMap.set(id, {
+              id,
+              title: ref.videoTitle,
+              thumbnail: ref.thumbnailUrl
+            });
+          }
+        });
+      }
+    });
+    
+    return Array.from(videoMap.values());
+  }, [messages]);
+
+  useEffect(() => {
+    if (fetcher.data) {
+      const response: Message = {
+        id: Date.now().toString(),
+        role: "assistant",
+        content: fetcher.data.content,
+        timestamp: new Date(),
+        videoReferences: fetcher.data.videoReferences
+      };
+      setMessages(prev => [...prev, response]);
+    }
+  }, [fetcher.data]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,17 +133,13 @@ export default function CollectionChat() {
     };
 
     setMessages([...messages, newMessage]);
+    const currentInput = inputMessage;
     setInputMessage("");
 
-    setTimeout(() => {
-      const response = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant" as const,
-        content: "I'm analyzing your entire video collection to provide comprehensive insights...",
-        timestamp: new Date()
-      };
-      setMessages(prev => [...prev, response]);
-    }, 1000);
+    fetcher.submit(
+      { query: currentInput },
+      { method: "post" }
+    );
   };
 
   return (
@@ -122,9 +188,25 @@ export default function CollectionChat() {
                     </div>
                   </div>
                 ) : (
-                  messages.map((message) => (
-                    <ChatMessage key={message.id} message={message} />
-                  ))
+                  <>
+                    {messages.map((message) => (
+                      <ChatMessage key={message.id} message={message} />
+                    ))}
+                    {fetcher.state === "submitting" && (
+                      <div className="flex items-start gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-teal-600 flex items-center justify-center shadow-md">
+                          <Sparkles className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-4 shadow-sm">
+                          <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                            <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
@@ -135,13 +217,19 @@ export default function CollectionChat() {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     placeholder="Ask about your video collection..."
-                    className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400"
+                    disabled={fetcher.state === "submitting"}
+                    className="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400 disabled:opacity-50"
                   />
                   <button
                     type="submit"
-                    className="p-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+                    disabled={fetcher.state === "submitting"}
+                    className="p-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Send className="w-5 h-5" />
+                    {fetcher.state === "submitting" ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Send className="w-5 h-5" />
+                    )}
                   </button>
                 </div>
               </form>
@@ -166,11 +254,17 @@ export default function CollectionChat() {
                       className="block group"
                     >
                       <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200">
-                        <img
-                          src={video.thumbnail}
-                          alt={video.title}
-                          className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
-                        />
+                        {video.thumbnail ? (
+                          <img
+                            src={video.thumbnail}
+                            alt={video.title}
+                            className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
+                          />
+                        ) : (
+                          <div className="w-full h-32 bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                            <Film className="w-8 h-8 text-gray-400" />
+                          </div>
+                        )}
                         <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                         <div className="absolute bottom-0 left-0 right-0 p-3">
                           <p className="text-white text-sm font-medium truncate">
