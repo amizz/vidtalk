@@ -1,17 +1,16 @@
 # R2 Configuration
-# Copy this file to .dev.vars and fill in your actual values
 # You'll need to create an R2 API token with read/write access to your bucket
 # Get these from: https://dash.cloudflare.com/profile/api-tokens
 
 # Your Cloudflare account ID
-CLOUDFLARE_ACCOUNT_ID=your-account-id-here
+CLOUDFLARE_ACCOUNT_ID=
+CLOUDFLARE_ACCOUNT_TOKEN=
 
-# R2 Access Keys
-R2_ACCESS_KEY_ID=your-r2-access-key-id
-R2_SECRET_ACCESS_KEY=your-r2-secret-access-key
+# R2
+R2_ACCESS_KEY_ID=
+R2_SECRET_ACCESS_KEY=
+R2_TOKEN=
+R2_PUBLIC_URL=
 
-# Auto-RAG Configuration
-# Your Cloudflare API token with Auto-RAG permissions
-CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
-# Your Auto-RAG ID
-AUTORAG_ID=your-autorag-id
+# AutoRAG
+AUTORAG_ID=
