@@ -79,7 +79,7 @@ function groupWordsIntoSegments(words: Array<{
 export class VidTalkDatabase extends DurableObject {
   private db!: ReturnType<typeof drizzle>;
 
-  constructor(ctx: DurableObjectState, env: Env) {
+  constructor(ctx: DurableObjectState, public env: Env) {
     super(ctx, env);
     
     this.ctx.blockConcurrencyWhile(async () => {
@@ -115,11 +115,23 @@ export class VidTalkDatabase extends DurableObject {
   }
 
   async deleteVideo(id: string) {
-    const transcript = await this.db.select().from(schema.transcripts).where(eq(schema.transcripts.videoId, id)).get();
+    const video = await this.getVideo(id);
+    if (video) {
+      const folderPath = `videos/${id}/`;
+
+      const objects = await this.env.VIDEO_BUCKET.list({ prefix: folderPath });
+      for (const obj of objects.objects) {
+        await this.env.VIDEO_BUCKET.delete(obj.key);
+      }
+    }
+
+    const transcript = this.db.select().from(schema.transcripts).where(eq(schema.transcripts.videoId, id)).get();
+
     if (transcript) {
       await this.db.delete(schema.transcriptSegments).where(eq(schema.transcriptSegments.transcriptId, transcript.id));
       await this.db.delete(schema.transcripts).where(eq(schema.transcripts.id, transcript.id));
     }
+
     return this.db.delete(schema.videos).where(eq(schema.videos.id, id)).returning().get();
   }
 
@@ -309,6 +321,10 @@ export class VideoProcessor extends DurableObject {
       console.log('Step 5: Saving transcript text file to R2...');
       const transcriptKey = await this.saveTranscriptToR2(videoUrl, transcription.text);
       console.log(`Transcript saved to R2: ${transcriptKey}`);
+      
+      // Step 6: Sync with Auto-RAG
+      console.log('Step 6: Syncing with Auto-RAG...');
+      await this.syncWithAutoRAG();
       
       // Update video status to completed
       await this.updateVideoStatus(videoId, 'completed', transcriptKey);
@@ -539,6 +555,35 @@ export class VideoProcessor extends DurableObject {
     });
     
     return transcriptKey;
+  }
+
+  private async syncWithAutoRAG(): Promise<void> {
+    if (!this.env.AUTORAG_ID || !this.env.CLOUDFLARE_ACCOUNT_TOKEN || !this.env.CLOUDFLARE_ACCOUNT_ID) {
+      console.log('Auto-RAG sync skipped: Missing required environment variables');
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `https://api.cloudflare.com/client/v4/accounts/${this.env.CLOUDFLARE_ACCOUNT_ID}/autorag/rags/${this.env.AUTORAG_ID}/sync`,
+        {
+          method: 'PATCH',
+          headers: {
+            'Authorization': `Bearer ${this.env.CLOUDFLARE_ACCOUNT_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`Auto-RAG sync failed: ${response.status} ${response.statusText} - ${errorText}`);
+      } else {
+        console.log('Auto-RAG sync triggered successfully');
+      }
+    } catch (error) {
+      console.error('Error triggering Auto-RAG sync:', error);
+    }
   }
 
   async getStatus() {
