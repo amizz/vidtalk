@@ -1,5 +1,13 @@
 import { Link } from "react-router";
 import { Video, MessageSquare, Sparkles, Zap, Upload, ArrowRight, Music, Tv, Radio } from "lucide-react";
+import type { MetaFunction } from "react-router";
+
+export const meta: MetaFunction = () => {
+ return [
+  { title: "VidTalk" },
+  { name: "description", content: "VidTalk" }
+ ];
+};
 
 export default function Home() {
  return (

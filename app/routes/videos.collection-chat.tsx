@@ -1,9 +1,17 @@
 import { useState, useEffect, useMemo } from "react";
 import { Link, useFetcher, type ActionFunctionArgs } from "react-router";
 import { ChatMessage } from "~/components/ChatMessage";
-import { ArrowLeft, Send, Film, Sparkles } from "lucide-react";
+import { ArrowLeft, Send, Film, Sparkles, Tv, Radio, Music, Disc } from "lucide-react";
 import type { CloudflareContext } from "~/types/types";
 import { VidTalkAPI } from "~/lib/api";
+import type { MetaFunction } from "react-router";
+
+export const meta: MetaFunction = () => {
+ return [
+  { title: "Cosmic Chat" },
+  { name: "description", content: "Cosmic Chat" }
+ ];
+};
 
 type ActionResponse = {
  content: string;
@@ -143,139 +151,171 @@ export default function CollectionChat() {
  };
 
  return (
-  <div className="min-h-screen bg-gray-50">
-   <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+  <div className="min-h-screen bg-[#FFF3E0]">
+   <div className="max-w-7xl mx-auto px-6 py-8">
     <div className="mb-8">
      <Link
       to="/videos"
-      className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+      className="inline-flex items-center gap-2 px-4 py-2 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bebas text-lg mb-6"
      >
-      <ArrowLeft className="w-4 h-4" />
-      Back to Library
+      <ArrowLeft className="w-5 h-5" />
+      Back to Vault
      </Link>
      
-     <h1 className="text-3xl font-bold text-gray-900">
-      Chat
-     </h1>
-     <p className="mt-1 text-gray-600">
-      Chat across your entire video library
-     </p>
+     <div className="flex items-center gap-4">
+      <div className="w-20 h-20 bg-[#FF006E] rounded-2xl flex items-center justify-center retro-border retro-shadow wiggle-hover">
+       <Radio className="w-12 h-12 text-white" />
+      </div>
+      <div>
+       <h1 className="font-bungee-shade text-5xl text-[#1A0033]">
+        COSMIC CHAT
+       </h1>
+       <p className="font-bebas text-2xl text-[#8338EC] mt-1">
+        Chat across your entire groovy video collection!
+       </p>
+      </div>
+     </div>
     </div>
 
     <div className="flex gap-8">
      <div className="flex-1 max-w-4xl">
-      <div className="bg-white rounded-xl shadow-lg h-[70vh] flex flex-col">
-       <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {messages.length === 0 ? (
-         <div className="text-center py-16">
-          <Sparkles className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <p className="text-gray-500 mb-4">
-           Start a conversation about your video collection
-          </p>
-          <div className="space-y-2">
-           <button
-            onClick={() => handleSendMessage({ preventDefault: () => {} } as any)}
-            className="text-sm text-blue-600 hover:underline block"
-           >
-            "What themes appear across all videos?"
-           </button>
-           <button
-            onClick={() => handleSendMessage({ preventDefault: () => {} } as any)}
-            className="text-sm text-blue-600 hover:underline block"
-           >
-            "Summarize the key insights from my collection"
-           </button>
-          </div>
-         </div>
-        ) : (
-         <>
-          {messages.map((message) => (
-           <ChatMessage key={message.id} message={message} />
-          ))}
-          {fetcher.state === "submitting" && (
-           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-600 to-teal-600 flex items-center justify-center shadow-md">
-             <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <div className="flex-1 bg-gray-100 rounded-lg p-4 shadow-sm">
-             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
-             </div>
+      <div className="relative">
+       <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform rotate-1" />
+       <div className="relative bg-white rounded-2xl retro-shadow-lg h-[70vh] flex flex-col retro-border">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-[#FFF3E0] rounded-t-2xl">
+         {messages.length === 0 ? (
+          <div className="text-center py-16">
+           <div className="relative inline-block mb-6">
+            <div className="absolute inset-0 bg-[#00F5FF] rounded-3xl retro-border transform -rotate-6" />
+            <div className="relative w-24 h-24 bg-[#FFBE0B] rounded-3xl flex items-center justify-center retro-border retro-shadow float">
+             <Sparkles className="w-12 h-12 text-[#1A0033]" />
             </div>
            </div>
-          )}
-         </>
-        )}
-       </div>
-
-       <form onSubmit={handleSendMessage} className="p-4 border-t border-gray-200">
-        <div className="flex gap-2">
-         <input
-          type="text"
-          value={inputMessage}
-          onChange={(e) => setInputMessage(e.target.value)}
-          placeholder="Ask about your video collection..."
-          disabled={fetcher.state === "submitting"}
-          className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400 disabled:opacity-50"
-         />
-         <button
-          type="submit"
-          disabled={fetcher.state === "submitting"}
-          className="p-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-         >
-          {fetcher.state === "submitting" ? (
-           <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-           <Send className="w-5 h-5" />
-          )}
-         </button>
+           <p className="font-bungee text-2xl text-[#1A0033] mb-6">
+            START A COSMIC CONVERSATION!
+           </p>
+           <div className="space-y-3">
+            <button
+             onClick={() => {
+              setInputMessage("What themes appear across all videos?");
+              handleSendMessage({ preventDefault: () => {} } as any);
+             }}
+             className="block mx-auto px-6 py-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bebas text-lg"
+            >
+             "What themes appear across all videos?"
+            </button>
+            <button
+             onClick={() => {
+              setInputMessage("Summarize the key insights from my collection");
+              handleSendMessage({ preventDefault: () => {} } as any);
+             }}
+             className="block mx-auto px-6 py-3 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bebas text-lg"
+            >
+             "Summarize the key insights from my collection"
+            </button>
+           </div>
+          </div>
+         ) : (
+          <>
+           {messages.map((message) => (
+            <ChatMessage key={message.id} message={message} />
+           ))}
+           {fetcher.state === "submitting" && (
+            <div className="flex items-start gap-4">
+             <div className="relative">
+              <div className="absolute inset-0 bg-[#8338EC] rounded-xl retro-border transform -rotate-3" />
+              <div className="relative w-12 h-12 rounded-xl bg-[#00F5FF] flex items-center justify-center retro-border">
+               <Radio className="w-6 h-6 text-[#1A0033] animate-pulse" />
+              </div>
+             </div>
+             <div className="relative flex-1">
+              <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform rotate-1" />
+              <div className="relative bg-white rounded-2xl retro-border p-6">
+               <div className="flex items-center gap-3">
+                <div className="w-3 h-3 bg-[#FF006E] rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+                <div className="w-3 h-3 bg-[#FFBE0B] rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+                <div className="w-3 h-3 bg-[#00F5FF] rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+               </div>
+              </div>
+             </div>
+            </div>
+           )}
+          </>
+         )}
         </div>
-       </form>
+
+        <form onSubmit={handleSendMessage} className="p-5 border-t-4 border-[#1A0033] bg-white rounded-b-2xl">
+         <div className="flex gap-3">
+          <input
+           type="text"
+           value={inputMessage}
+           onChange={(e) => setInputMessage(e.target.value)}
+           placeholder="Ask cosmic questions about your videos..."
+           disabled={fetcher.state === "submitting"}
+           className="flex-1 px-5 py-3 bg-[#FFF3E0] rounded-xl font-space-mono text-[#1A0033] placeholder-[#8338EC]/50 focus:outline-none focus:ring-4 focus:ring-[#FF006E]/30 disabled:opacity-50 retro-border"
+          />
+          <button
+           type="submit"
+           disabled={fetcher.state === "submitting"}
+           className="p-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed wiggle-hover"
+          >
+           {fetcher.state === "submitting" ? (
+            <Disc className="w-6 h-6 animate-spin" />
+           ) : (
+            <Send className="w-6 h-6" />
+           )}
+          </button>
+         </div>
+        </form>
+       </div>
       </div>
      </div>
 
      <div className="hidden lg:block w-80">
-      <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
-       <h3 className="text-lg font-semibold text-gray-900 mb-4">
-        Referenced Videos
-       </h3>
-       {referencedVideos.length === 0 ? (
-        <p className="text-sm text-gray-500">
-         Videos referenced in the conversation will appear here
-        </p>
-       ) : (
-        <div className="space-y-4">
-         {referencedVideos.map((video) => (
-          <Link
-           key={video.id}
-           to={`/videos/${video.id}`}
-           className="block group"
-          >
-           <div className="relative overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-200">
-            {video.thumbnail ? (
-             <img
-              src={video.thumbnail}
-              alt={video.title}
-              className="w-full h-32 object-cover group-hover:scale-105 transition-transform duration-200"
-             />
-            ) : (
-             <div className="w-full h-32 bg-gray-200 flex items-center justify-center">
-              <Film className="w-8 h-8 text-gray-400" />
+      <div className="relative">
+       <div className="absolute inset-0 bg-[#FF006E] rounded-2xl retro-border transform -rotate-1" />
+       <div className="relative bg-white rounded-2xl retro-shadow-lg p-6 sticky top-8 retro-border">
+        <h3 className="font-bungee text-xl text-[#1A0033] mb-6 flex items-center gap-3">
+         <Tv className="w-6 h-6" />
+         VIDEO REFS
+        </h3>
+        {referencedVideos.length === 0 ? (
+         <p className="font-space-mono text-sm text-[#8338EC]">
+          Videos referenced in the cosmic conversation will appear here!
+         </p>
+        ) : (
+         <div className="space-y-4">
+          {referencedVideos.map((video) => (
+           <Link
+            key={video.id}
+            to={`/videos/${video.id}`}
+            className="block group relative"
+           >
+            <div className="absolute inset-0 bg-[#8338EC] rounded-xl retro-border transform rotate-1 group-hover:rotate-2 transition-transform" />
+            <div className="relative overflow-hidden rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+             {video.thumbnail ? (
+              <img
+               src={video.thumbnail}
+               alt={video.title}
+               className="w-full h-32 object-cover"
+              />
+             ) : (
+              <div className="w-full h-32 bg-gradient-to-br from-[#8338EC] to-[#FF006E] flex items-center justify-center">
+               <Film className="w-10 h-10 text-white" />
+              </div>
+             )}
+             <div className="absolute inset-0 bg-gradient-to-t from-[#1A0033]/90 via-transparent to-transparent" />
+             <div className="absolute bottom-0 left-0 right-0 p-3">
+              <p className="font-bebas text-white text-lg truncate">
+               {video.title}
+              </p>
              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-             <p className="text-white text-sm font-medium truncate">
-              {video.title}
-             </p>
             </div>
-           </div>
-          </Link>
-         ))}
-        </div>
-       )}
+           </Link>
+          ))}
+         </div>
+        )}
+       </div>
       </div>
      </div>
     </div>

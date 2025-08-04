@@ -3,11 +3,19 @@ import { useParams, Link, useLoaderData, useNavigate } from "react-router";
 import { VideoPlayer } from "~/components/VideoPlayer";
 import { TranscriptViewer } from "~/components/TranscriptViewer";
 import { ChatMessage } from "~/components/ChatMessage";
-import { ArrowLeft, Send, X, MessageCircle, Trash2 } from "lucide-react";
+import { ArrowLeft, Send, X, MessageCircle, Trash2, Tv, Radio, Music, Sparkles } from "lucide-react";
 import { useToast } from "~/contexts/ToastContext";
 import type { LoaderFunctionArgs } from "react-router";
 import type { CloudflareContext } from "~/types/types";
 import { VidTalkAPI } from "~/lib/api";
+import type { MetaFunction } from "react-router";
+
+export const meta: MetaFunction = () => {
+ return [
+  { title: "Groovy Video" },
+  { name: "description", content: "Groovy Video" }
+ ];
+};
 
 interface Video {
  id: string;
@@ -116,16 +124,23 @@ export default function VideoDetail() {
  
  if (!video) {
   return (
-   <div className="flex h-screen items-center justify-center">
+   <div className="flex h-screen items-center justify-center bg-[#FFF3E0]">
     <div className="text-center">
-     <h1 className="text-2xl font-bold text-gray-900 mb-4">
-      Video Not Found
+     <div className="relative inline-block mb-6">
+      <div className="absolute inset-0 bg-[#FF006E] rounded-3xl retro-border transform rotate-6" />
+      <div className="relative w-32 h-32 bg-[#FFBE0B] rounded-3xl flex items-center justify-center retro-border retro-shadow">
+       <Tv className="w-16 h-16 text-[#1A0033]" />
+      </div>
+     </div>
+     <h1 className="font-bungee text-3xl text-[#1A0033] mb-4">
+      VIDEO NOT FOUND!
      </h1>
      <Link
       to="/videos"
-      className="text-blue-600 hover:text-blue-700"
+      className="inline-flex items-center gap-2 px-6 py-3 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bebas text-xl"
      >
-      Back to Library
+      <ArrowLeft className="w-5 h-5" />
+      Back to Vault
      </Link>
     </div>
    </div>
@@ -133,7 +148,7 @@ export default function VideoDetail() {
  }
 
  const handleDeleteVideo = async () => {
-  if (!confirm('Are you sure you want to delete this video?')) return;
+  if (!confirm('Are you sure you want to delete this groovy video?')) return;
   
   setIsDeleting(true);
   try {
@@ -186,46 +201,54 @@ export default function VideoDetail() {
  };
 
  return (
-  <div className="flex h-screen overflow-hidden bg-gray-50">
+  <div className="flex h-screen overflow-hidden bg-[#FFF3E0]">
    {/* Main content area */}
    <div className="flex-1 flex flex-col min-w-0">
     {/* Header */}
-    <div className="bg-white shadow-sm z-10">
-     <div className="px-4 py-3 sm:px-6 flex items-center justify-between">
+    <div className="bg-[#1A0033] border-b-4 border-[#FF006E] z-10">
+     <div className="px-6 py-4 flex items-center justify-between">
       <Link
        to="/videos"
-       className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+       className="inline-flex items-center gap-2 px-4 py-2 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all font-bebas text-lg"
       >
-       <ArrowLeft className="w-4 h-4" />
-       Back to Library
+       <ArrowLeft className="w-5 h-5" />
+       Back to Vault
       </Link>
       <button
        onClick={handleDeleteVideo}
        disabled={isDeleting}
-       className="inline-flex items-center gap-2 px-3 py-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+       className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all disabled:opacity-50 font-bebas text-lg wiggle-hover"
        title="Delete video"
       >
-       <Trash2 className="w-4 h-4" />
-       <span className="hidden sm:inline">Delete Video</span>
+       <Trash2 className="w-5 h-5" />
+       <span className="hidden sm:inline">DELETE</span>
       </button>
      </div>
     </div>
 
     {/* Video content */}
     <div className="flex-1 overflow-y-auto">
-     <div className="max-w-6xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
-      {/* Video player with aspect ratio container */}
-      <div className="relative w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
-       <VideoPlayer
-        videoUrl={videoUrl || undefined}
-        title={video.title}
-        onTimeUpdate={setCurrentTime}
-       />
+     <div className="max-w-6xl mx-auto px-6 py-8">
+      {/* Video player */}
+      <div className="relative">
+       <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform rotate-1" />
+       <div className="relative w-full aspect-video rounded-2xl overflow-hidden retro-shadow-lg">
+        <VideoPlayer
+         videoUrl={videoUrl || undefined}
+         title={video.title}
+         onTimeUpdate={setCurrentTime}
+        />
+       </div>
       </div>
       
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mt-6 mb-6">
-       {video.title}
-      </h1>
+      <div className="mt-8 mb-8 flex items-center gap-4">
+       <div className="w-16 h-16 bg-[#FF006E] rounded-xl flex items-center justify-center retro-border wiggle-hover">
+        <Music className="w-8 h-8 text-white" />
+       </div>
+       <h1 className="font-bungee text-3xl sm:text-4xl text-[#1A0033]">
+        {video.title}
+       </h1>
+      </div>
 
       {transcript && transcript.segments.length > 0 ? (
        <TranscriptViewer
@@ -239,110 +262,80 @@ export default function VideoDetail() {
         onSegmentClick={handleTimestampClick}
        />
       ) : (
-       <div className="bg-gray-100 rounded-lg p-6 text-center">
-        <p className="text-gray-600">
-         {video.status === 'processing' 
-          ? 'Transcript is being generated...' 
-          : 'No transcript available for this video'}
-        </p>
+       <div className="relative">
+        <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform -rotate-1" />
+        <div className="relative bg-white rounded-2xl retro-border retro-shadow p-12 text-center">
+         <Radio className="w-16 h-16 mx-auto text-[#8338EC] mb-4 animate-pulse" />
+         <p className="font-bebas text-2xl text-[#1A0033]">
+          {video.status === 'processing' 
+           ? 'TRANSCRIPT COOKING...' 
+           : 'NO TRANSCRIPT YET!'}
+         </p>
+        </div>
        </div>
       )}
      </div>
     </div>
    </div>
 
-   {/* Chat sidebar */}
-   <div className="hidden lg:flex w-96 border-l border-gray-200 flex-col bg-white shadow-xl">
-    <div className="px-4 py-5 border-b border-gray-200">
-     <h2 className="text-lg font-semibold text-gray-900">
-      AI Chat Assistant
-     </h2>
-     <p className="text-sm text-gray-600 mt-1">
-      Ask questions about this video
-     </p>
-    </div>
-
-    <div className="flex-1 overflow-y-auto px-4 py-4">
-     <div className="space-y-4">
-      {messages.map((message) => (
-       <ChatMessage key={message.id} message={message} />
-      ))}
-     </div>
-    </div>
-
-    <form onSubmit={handleSendMessage} className="px-4 py-4 border-t border-gray-200">
-     <div className="flex gap-2">
-      <input
-       type="text"
-       value={inputMessage}
-       onChange={(e) => setInputMessage(e.target.value)}
-       placeholder="Ask about the video..."
-       className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-      />
-      <button
-       type="submit"
-       className="p-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
-      >
-       <Send className="w-5 h-5" />
-      </button>
-     </div>
-    </form>
-   </div>
-
-   {/* Mobile chat button */}
+   {/* Chat button - visible on all screen sizes */}
    <button
-    className="lg:hidden fixed bottom-4 right-4 p-4 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-full shadow-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 z-50"
+    className="fixed bottom-6 right-6 p-4 bg-[#FF006E] text-white rounded-2xl retro-border retro-shadow-lg hover:translate-x-0.5 hover:translate-y-0.5 transition-all z-50 wiggle-hover"
     onClick={() => setIsChatOpen(true)}
    >
-    <MessageCircle className="w-6 h-6" />
+    <MessageCircle className="w-7 h-7" />
    </button>
 
-   {/* Mobile chat modal */}
+   {/* Chat modal - works on all screen sizes */}
    {isChatOpen && (
-    <div className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end sm:items-center sm:justify-center">
-     <div className="bg-white w-full sm:max-w-lg h-[90vh] sm:h-[80vh] rounded-t-xl sm:rounded-xl flex flex-col transition-all duration-300 ease-out transform translate-y-0">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-       <div>
-        <h2 className="text-lg font-semibold text-gray-900">
-         AI Chat Assistant
-        </h2>
-        <p className="text-sm text-gray-600">
-         Ask questions about this video
-        </p>
-       </div>
-       <button
-        onClick={() => setIsChatOpen(false)}
-        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-       >
-        <X className="w-5 h-5 text-gray-500" />
-       </button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 py-4">
-       <div className="space-y-4">
-        {messages.map((message) => (
-         <ChatMessage key={message.id} message={message} />
-        ))}
-       </div>
-      </div>
-
-      <form onSubmit={handleSendMessage} className="px-4 py-4 border-t border-gray-200">
-       <div className="flex gap-2">
-        <input
-         type="text"
-         value={inputMessage}
-         onChange={(e) => setInputMessage(e.target.value)}
-         placeholder="Ask about the video..."
-         className="flex-1 px-4 py-2 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-        />
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[100] flex items-end sm:items-center sm:justify-center">
+     <div className="relative w-full sm:max-w-lg h-[90vh] sm:h-[80vh] bounce-in">
+      <div className="absolute inset-0 bg-[#8338EC] rounded-t-3xl sm:rounded-3xl retro-border transform -rotate-1" />
+      <div className="relative bg-white w-full h-full rounded-t-3xl sm:rounded-3xl flex flex-col retro-border">
+       <div className="flex items-center justify-between px-5 py-4 border-b-4 border-[#1A0033] bg-gradient-to-r from-[#FF006E] to-[#8338EC] rounded-t-3xl">
+        <div>
+         <h2 className="font-bungee text-xl text-white flex items-center gap-2">
+          <Radio className="w-5 h-5" />
+          AI CHAT
+         </h2>
+         <p className="font-space-mono text-xs text-white/80">
+          Ask groovy questions
+         </p>
+        </div>
         <button
-         type="submit"
-         className="p-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+         onClick={() => setIsChatOpen(false)}
+         className="p-2 bg-[#FFBE0B] text-[#1A0033] rounded-lg retro-border hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
         >
-         <Send className="w-5 h-5" />
+         <X className="w-5 h-5" />
         </button>
        </div>
-      </form>
+
+       <div className="flex-1 overflow-y-auto px-4 py-6 bg-[#FFF3E0]">
+        <div className="space-y-6">
+         {messages.map((message) => (
+          <ChatMessage key={message.id} message={message} />
+         ))}
+        </div>
+       </div>
+
+       <form onSubmit={handleSendMessage} className="px-4 py-4 border-t-4 border-[#1A0033] bg-white">
+        <div className="flex gap-3">
+         <input
+          type="text"
+          value={inputMessage}
+          onChange={(e) => setInputMessage(e.target.value)}
+          placeholder="Ask something rad..."
+          className="flex-1 px-4 py-3 bg-[#FFF3E0] border-3 border-[#8338EC] rounded-xl font-space-mono text-[#1A0033] placeholder-[#8338EC]/50 focus:outline-none focus:ring-4 focus:ring-[#FF006E]/30 retro-border"
+         />
+         <button
+          type="submit"
+          className="p-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+         >
+          <Send className="w-6 h-6" />
+         </button>
+        </div>
+       </form>
+      </div>
      </div>
     </div>
    )}

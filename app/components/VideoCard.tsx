@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { Play, Clock, CheckCircle, Loader, AlertCircle, Trash2 } from 'lucide-react';
+import { Play, Clock, CheckCircle, Loader, AlertCircle, Trash2, Tv, Radio, Film } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import ThumbnailPlaceholder from './ThumbnailPlaceholder';
 
@@ -82,89 +82,104 @@ export default function VideoCard({ video, onDelete }: VideoCardProps) {
       mounted = false;
     };
   }, [video]);
+
   const getStatusBadge = () => {
     switch (video.status) {
       case 'transcribed':
         return (
-          <div className="flex items-center gap-1 text-green-600">
+          <div className="flex items-center gap-1 px-2 py-1 bg-[#00F5FF] text-[#1A0033] rounded-lg retro-border font-space-mono text-xs">
             <CheckCircle className="w-4 h-4" />
-            <span className="text-xs">Transcribed</span>
+            <span>READY</span>
           </div>
         );
       case 'processing':
         return (
-          <div className="flex items-center gap-1 text-blue-600">
-            <Loader className="w-4 h-4 animate-spin" />
-            <span className="text-xs">Processing</span>
+          <div className="flex items-center gap-1 px-2 py-1 bg-[#FFBE0B] text-[#1A0033] rounded-lg retro-border font-space-mono text-xs">
+            <Radio className="w-4 h-4 animate-pulse" />
+            <span>COOKING</span>
           </div>
         );
       case 'failed':
         return (
-          <div className="flex items-center gap-1 text-red-600">
+          <div className="flex items-center gap-1 px-2 py-1 bg-[#FF006E] text-white rounded-lg retro-border font-space-mono text-xs">
             <AlertCircle className="w-4 h-4" />
-            <span className="text-xs">Failed</span>
+            <span>OOPS</span>
           </div>
         );
     }
   };
 
   return (
-    <div className="relative bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden group hover:scale-[1.02]">
-      <Link
-        to={`/videos/${video.id}`}
-        className="block"
-      >
-      <div className="relative aspect-video bg-gray-200">
-        {thumbnailUrl ? (
-          <img
-            src={thumbnailUrl}
-            alt={video.title}
-            className="w-full h-full object-cover"
-            onError={() => {
-              setThumbnailError(true);
-              setThumbnailUrl(null);
-            }}
-          />
-        ) : (
-          <ThumbnailPlaceholder isLoading={thumbnailLoading} error={thumbnailError} />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <div className="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
-            <Play className="w-8 h-8 text-white ml-1" />
-          </div>
-        </div>
-        <div className="absolute bottom-2 right-2 px-2 py-1 bg-black/70 backdrop-blur-sm text-white text-xs rounded">
-          {video.duration}
-        </div>
-      </div>
-      
-      <div className="p-4">
-        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
-          {video.title}
-        </h3>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1 text-gray-500 text-sm">
-            <Clock className="w-4 h-4" />
-            <span>{video.uploadDate}</span>
-          </div>
-          {getStatusBadge()}
-        </div>
-      </div>
-      </Link>
-      {onDelete && (
-        <button
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            onDelete(video.id);
-          }}
-          className="absolute top-2 right-2 p-2 bg-white/20 backdrop-blur-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-red-500 hover:text-white"
-          title="Delete video"
+    <div className="relative group transform transition-all duration-200 hover:scale-105">
+      <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform rotate-3 group-hover:rotate-6 transition-transform duration-200" />
+      <div className="relative bg-white rounded-2xl overflow-hidden retro-border retro-shadow hover:translate-x-1 hover:translate-y-1 transition-transform duration-200">
+        <Link
+          to={`/videos/${video.id}`}
+          className="block"
         >
-          <Trash2 className="w-4 h-4" />
-        </button>
-      )}
+        <div className="relative aspect-video bg-[#2D1B69]">
+          {thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt={video.title}
+              className="w-full h-full object-cover"
+              onError={() => {
+                setThumbnailError(true);
+                setThumbnailUrl(null);
+              }}
+            />
+          ) : (
+            <ThumbnailPlaceholder isLoading={thumbnailLoading} error={thumbnailError} />
+          )}
+          
+          {/* Play Button Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1A0033]/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <div className="w-16 h-16 bg-[#FF006E] rounded-full flex items-center justify-center retro-border retro-shadow wiggle-hover">
+              <Play className="w-8 h-8 text-white ml-1" />
+            </div>
+          </div>
+          
+          {/* Duration Badge */}
+          <div className="absolute bottom-3 right-3 px-3 py-1 bg-[#FFBE0B] text-[#1A0033] font-bebas text-lg rounded-lg retro-border">
+            {video.duration}
+          </div>
+          
+          {/* Retro TV Icon */}
+          <div className="absolute top-3 left-3 w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center retro-border wiggle-hover">
+            <Tv className="w-6 h-6 text-white" />
+          </div>
+        </div>
+        
+        <div className="p-4 bg-[#FFF3E0]">
+          <h3 className="font-bungee text-lg text-[#1A0033] mb-3 line-clamp-2">
+            {video.title}
+          </h3>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 font-space-mono text-sm text-[#8338EC]">
+              <Clock className="w-4 h-4" />
+              <span>{video.uploadDate}</span>
+            </div>
+            {getStatusBadge()}
+          </div>
+        </div>
+        </Link>
+        
+        {/* Delete Button */}
+        {onDelete && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(video.id);
+            }}
+            className="absolute top-3 right-3 p-2 bg-[#FF006E] text-white rounded-lg retro-border opacity-0 group-hover:opacity-100 transition-all duration-200 hover:bg-[#FF006E]/80 wiggle-hover"
+            title="Delete video"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

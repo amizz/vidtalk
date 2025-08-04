@@ -7,7 +7,11 @@ import {
   Maximize2,
   SkipBack,
   SkipForward,
-  Settings
+  Settings,
+  Tv,
+  Radio,
+  Music,
+  Disc
 } from 'lucide-react';
 
 interface VideoPlayerProps {
@@ -97,148 +101,174 @@ export function VideoPlayer({ videoUrl, title, onTimeUpdate, onSeek }: VideoPlay
   };
 
   return (
-    <div 
-      className="relative bg-black w-full h-full group"
-      onMouseEnter={() => setShowControls(true)}
-      onMouseLeave={() => setShowControls(isPlaying ? false : true)}
-    >
-      {videoUrl ? (
-        <video
-          ref={videoRef}
-          className="w-full h-full object-contain"
-          src={videoUrl}
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleTimeUpdate}
-        />
-      ) : (
-        <div className="w-full h-full flex items-center justify-center bg-gray-900">
-          <div className="text-center">
-            <div className="w-24 h-24 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Play className="w-12 h-12 text-gray-600 ml-1" />
+    <div className="relative bg-[#1A0033] rounded-2xl overflow-hidden retro-border retro-shadow-lg group">
+      <div 
+        className="relative w-full h-full"
+        onMouseEnter={() => setShowControls(true)}
+        onMouseLeave={() => setShowControls(isPlaying ? false : true)}
+      >
+        {videoUrl ? (
+          <video
+            ref={videoRef}
+            className="w-full h-full object-contain"
+            src={videoUrl}
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={handleTimeUpdate}
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-[#2D1B69] min-h-[400px]">
+            <div className="text-center">
+              <div className="relative inline-block mb-6">
+                <div className="absolute inset-0 bg-[#FF006E] rounded-3xl retro-border transform rotate-6" />
+                <div className="relative w-32 h-32 bg-[#FFBE0B] rounded-3xl flex items-center justify-center retro-border retro-shadow float">
+                  <Tv className="w-16 h-16 text-[#1A0033]" />
+                </div>
+              </div>
+              <p className="font-bungee text-2xl text-[#00F5FF] mb-2">NO VIDEO YET!</p>
+              <p className="font-space-mono text-[#FF006E]">Upload a groovy video to start jamming</p>
             </div>
-            <p className="text-gray-400 text-lg font-medium">No video loaded</p>
-            <p className="text-gray-500 text-sm mt-1">Upload a video to get started</p>
-          </div>
-        </div>
-      )}
-
-      {/* Controls Overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-black/20 transition-opacity ${
-        showControls ? 'opacity-100' : 'opacity-0'
-      }`}>
-        {/* Title */}
-        <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/50 to-transparent">
-          <h3 className="text-white font-semibold text-xl drop-shadow-lg">{title}</h3>
-        </div>
-
-        {/* Center Play Button */}
-        {!isPlaying && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <button
-              onClick={togglePlay}
-              className="w-24 h-24 bg-white/10 backdrop-blur-md rounded-full flex items-center justify-center hover:bg-white/20 transition-all duration-300 shadow-2xl hover:scale-105"
-            >
-              <Play className="w-12 h-12 text-white ml-1" />
-            </button>
           </div>
         )}
 
-        {/* Bottom Controls */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 space-y-3 bg-gradient-to-t from-black/60 to-transparent">
-          {/* Progress Bar */}
-          <div 
-            ref={progressRef}
-            className="relative h-1.5 bg-white/20 backdrop-blur-sm rounded-full cursor-pointer group/progress hover:h-2 transition-all"
-            onClick={handleProgressClick}
-          >
-            <div 
-              className="absolute h-full bg-gradient-to-r from-blue-500 to-blue-400 rounded-full transition-all"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
-            />
-            <div 
-              className="absolute w-4 h-4 bg-white rounded-full -top-1.5 transition-all opacity-0 group-hover/progress:opacity-100 shadow-lg"
-              style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
-            />
+        {/* Retro TV Frame */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-4 left-4 w-8 h-8 bg-[#FF006E] rounded-full retro-border animate-pulse" />
+          <div className="absolute top-4 right-4 w-8 h-8 bg-[#00F5FF] rounded-full retro-border animate-pulse" style={{ animationDelay: '0.5s' }} />
+        </div>
+
+        {/* Controls Overlay */}
+        <div className={`absolute inset-0 bg-gradient-to-t from-[#1A0033]/90 via-transparent to-[#1A0033]/50 transition-opacity ${
+          showControls ? 'opacity-100' : 'opacity-0'
+        }`}>
+          {/* Title */}
+          <div className="absolute top-0 left-0 right-0 p-6">
+            <div className="bg-[#8338EC] px-6 py-3 rounded-2xl retro-border retro-shadow inline-block">
+              <h3 className="font-bungee text-xl text-white flex items-center gap-3">
+                <Radio className="w-6 h-6" />
+                {title}
+              </h3>
+            </div>
           </div>
 
-          {/* Control Buttons */}
-          <div className="flex items-center justify-between text-white">
-            <div className="flex items-center gap-1">
+          {/* Center Play Button */}
+          {!isPlaying && (
+            <div className="absolute inset-0 flex items-center justify-center">
               <button
                 onClick={togglePlay}
-                className="p-2.5 hover:bg-white/20 rounded-lg transition-all hover:scale-105"
+                className="relative group wiggle-hover"
               >
-                {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
+                <div className="absolute inset-0 bg-[#FF006E] rounded-full retro-border transform rotate-3 group-hover:rotate-6 transition-transform" />
+                <div className="relative w-28 h-28 bg-[#FFBE0B] rounded-full flex items-center justify-center retro-border retro-shadow-lg hover:translate-x-1 hover:translate-y-1 transition-transform">
+                  <Play className="w-14 h-14 text-[#1A0033] ml-2" />
+                </div>
               </button>
+            </div>
+          )}
 
-              <button
-                onClick={() => skip(-10)}
-                className="p-2.5 hover:bg-white/20 rounded-lg transition-all hover:scale-105"
+          {/* Bottom Controls */}
+          <div className="absolute bottom-0 left-0 right-0 p-6 space-y-4">
+            {/* Progress Bar */}
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#8338EC] rounded-full retro-border transform translate-y-0.5" />
+              <div 
+                ref={progressRef}
+                className="relative h-3 bg-[#2D1B69] rounded-full cursor-pointer retro-border overflow-hidden"
+                onClick={handleProgressClick}
               >
-                <SkipBack className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={() => skip(10)}
-                className="p-2.5 hover:bg-white/20 rounded-lg transition-all hover:scale-105"
-              >
-                <SkipForward className="w-5 h-5" />
-              </button>
-
-              <div className="flex items-center gap-2 ml-3">
-                <button
-                  onClick={toggleMute}
-                  className="p-2.5 hover:bg-white/20 rounded-lg transition-all"
+                <div 
+                  className="absolute h-full bg-gradient-to-r from-[#FF006E] to-[#00F5FF] transition-all"
+                  style={{ width: `${(currentTime / duration) * 100}%` }}
+                />
+                <div 
+                  className="absolute w-6 h-6 bg-[#FFBE0B] rounded-full retro-border -top-1.5 transition-all wiggle-hover"
+                  style={{ left: `${(currentTime / duration) * 100}%`, transform: 'translateX(-50%)' }}
                 >
-                  {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-                </button>
-                <div className="relative group/volume">
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.1"
-                    value={isMuted ? 0 : volume}
-                    onChange={handleVolumeChange}
-                    className="w-24 h-1.5 bg-white/20 rounded-full cursor-pointer appearance-none
-                             [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3 
-                             [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:shadow-md
-                             hover:bg-white/30 transition-all"
-                  />
+                  <Disc className="w-full h-full p-1 animate-spin" style={{ animationDuration: '2s' }} />
                 </div>
               </div>
-
-              <span className="text-sm ml-4 font-medium bg-black/30 px-3 py-1 rounded-md">
-                {formatTime(currentTime)} / {formatTime(duration)}
-              </span>
             </div>
 
-            <div className="flex items-center gap-1">
-              <div className="relative group/speed">
-                <button className="p-2.5 hover:bg-white/20 rounded-lg transition-all flex items-center gap-1.5">
-                  <Settings className="w-5 h-5" />
-                  <span className="text-sm font-medium">{playbackRate}x</span>
+            {/* Control Buttons */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={togglePlay}
+                  className="p-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all wiggle-hover"
+                >
+                  {isPlaying ? <Pause className="w-6 h-6" /> : <Play className="w-6 h-6" />}
                 </button>
-                <div className="absolute bottom-full right-0 mb-2 bg-gray-900/95 backdrop-blur-md rounded-lg shadow-2xl opacity-0 group-hover/speed:opacity-100 transition-all pointer-events-none group-hover/speed:pointer-events-auto">
-                  <div className="p-2 space-y-1">
-                    {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
-                      <button
-                        key={rate}
-                        onClick={() => handlePlaybackRateChange(rate)}
-                        className={`block w-full text-left px-4 py-2 rounded hover:bg-white/10 text-sm transition-colors ${
-                          playbackRate === rate ? 'bg-white/20 font-medium' : ''
-                        }`}
-                      >
-                        {rate}x
-                      </button>
-                    ))}
+
+                <button
+                  onClick={() => skip(-10)}
+                  className="p-3 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                >
+                  <SkipBack className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => skip(10)}
+                  className="p-3 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                >
+                  <SkipForward className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-3 ml-4">
+                  <button
+                    onClick={toggleMute}
+                    className="p-3 bg-[#00F5FF] text-[#1A0033] rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all"
+                  >
+                    {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                  </button>
+                  <div className="relative">
+                    <div className="absolute inset-0 bg-[#FF6B35] rounded-full retro-border transform translate-y-0.5" />
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={isMuted ? 0 : volume}
+                      onChange={handleVolumeChange}
+                      className="relative w-24 h-2 bg-[#2D1B69] rounded-full cursor-pointer appearance-none retro-border
+                               [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:h-4 
+                               [&::-webkit-slider-thumb]:bg-[#FFBE0B] [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:retro-border"
+                    />
                   </div>
+                </div>
+
+                <div className="bg-[#1A0033] px-4 py-2 rounded-xl retro-border ml-4">
+                  <span className="font-bebas text-lg text-[#00F5FF]">
+                    {formatTime(currentTime)} / {formatTime(duration)}
+                  </span>
                 </div>
               </div>
 
-              <button className="p-2.5 hover:bg-white/20 rounded-lg transition-all hover:scale-105">
-                <Maximize2 className="w-5 h-5" />
-              </button>
+              <div className="flex items-center gap-3">
+                <div className="relative group/speed">
+                  <button className="p-3 bg-[#FFBE0B] text-[#1A0033] rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all flex items-center gap-2">
+                    <Music className="w-5 h-5" />
+                    <span className="font-bebas text-lg">{playbackRate}x</span>
+                  </button>
+                  <div className="absolute bottom-full right-0 mb-3 bg-[#1A0033] rounded-xl retro-border retro-shadow opacity-0 group-hover/speed:opacity-100 transition-all pointer-events-none group-hover/speed:pointer-events-auto">
+                    <div className="p-2 space-y-1">
+                      {[0.5, 0.75, 1, 1.25, 1.5, 2].map(rate => (
+                        <button
+                          key={rate}
+                          onClick={() => handlePlaybackRateChange(rate)}
+                          className={`block w-full text-left px-4 py-2 rounded-lg font-space-mono text-sm transition-colors ${
+                            playbackRate === rate ? 'bg-[#FF006E] text-white' : 'text-[#00F5FF] hover:bg-[#8338EC] hover:text-white'
+                          }`}
+                        >
+                          {rate}x
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button className="p-3 bg-[#8338EC] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all">
+                  <Maximize2 className="w-5 h-5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

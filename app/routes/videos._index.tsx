@@ -2,12 +2,20 @@ import { useState, useEffect } from "react";
 import { useSearchParams, useLoaderData, useFetcher } from "react-router";
 import VideoCard from "~/components/VideoCard";
 import { VideoUploadModal } from "~/components/VideoUploadModal";
-import { Search, Upload, Menu, Loader2 } from "lucide-react";
+import { Search, Upload, Menu, Loader2, Tv, Sparkles, Music } from "lucide-react";
 import { useSidebar } from "~/contexts/SidebarContext";
 import { useToast } from "~/contexts/ToastContext";
 import type { LoaderFunctionArgs } from "react-router";
 import { VidTalkAPI } from "../lib/api";
 import type { CloudflareContext } from "~/types/types";
+import type { MetaFunction } from "react-router";
+
+export const meta: MetaFunction = () => {
+ return [
+  { title: "Video Vault" },
+  { name: "description", content: "Video Vault" }
+ ];
+};
 
 interface Video {
  id: string;
@@ -143,70 +151,102 @@ export default function VideosIndex() {
  };
 
  return (
-  <div className="min-h-screen">
+  <div className="min-h-screen relative">
    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     {/* Mobile menu button */}
     <button 
      onClick={() => setIsOpen(true)}
-     className="md:hidden mb-4 p-2 hover:bg-gray-100 rounded-lg"
+     className="md:hidden mb-4 p-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-200 wiggle-hover"
     >
      <Menu className="w-6 h-6" />
     </button>
     
     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
-     <div>
-      <h1 className="text-3xl font-bold text-gray-900">
-       Video Library
+     <div className="relative">
+      <div className="absolute -top-6 -left-6 w-16 h-16 bg-[#FFBE0B] rounded-full retro-border animate-bounce opacity-50" />
+      <h1 className="font-bungee-shade text-5xl text-[#1A0033] transform -rotate-2">
+       VIDEO VAULT
       </h1>
-      <p className="mt-1 text-gray-600">
-       Manage and chat with your video collection
+      <p className="mt-2 font-bebas text-2xl text-[#8338EC] tracking-wider">
+       Your groovy video collection awaits!
       </p>
      </div>
-     <div className="flex gap-2">
+     <div className="flex gap-3">
       <button
        onClick={refreshVideos}
        disabled={isLoading}
-       className="p-2 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50"
+       className="p-3 bg-[#00F5FF] text-[#1A0033] rounded-xl retro-border retro-shadow hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-200 disabled:opacity-50 wiggle-hover"
        title="Refresh videos"
       >
-       <Loader2 className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+       <Loader2 className={`w-6 h-6 ${isLoading ? 'animate-spin' : ''}`} />
       </button>
       <button
        onClick={() => setIsUploadModalOpen(true)}
-       className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-teal-600 text-white rounded-lg hover:from-blue-700 hover:to-teal-700 transition-all duration-200 transform hover:scale-105 shadow-lg"
+       className="flex items-center gap-3 px-6 py-3 bg-[#FF006E] text-white rounded-xl retro-border retro-shadow-lg hover:translate-x-0.5 hover:translate-y-0.5 transition-all duration-200 font-bungee wiggle-hover"
       >
-       <Upload className="w-5 h-5" />
-       Upload Video
+       <Upload className="w-6 h-6" />
+       DROP BEATS
       </button>
      </div>
     </div>
 
-    <div className="relative mb-8 max-w-2xl">
-     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-     <input
-      type="text"
-      placeholder="Search videos..."
-      value={searchQuery}
-      onChange={(e) => setSearchQuery(e.target.value)}
-      className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-400"
-     />
+    <div className="relative mb-10 max-w-2xl">
+     <div className="absolute inset-0 bg-[#8338EC] rounded-2xl retro-border transform rotate-1" />
+     <div className="relative bg-white rounded-2xl retro-border retro-shadow">
+      <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[#8338EC] w-6 h-6" />
+      <input
+       type="text"
+       placeholder="Search for rad videos..."
+       value={searchQuery}
+       onChange={(e) => setSearchQuery(e.target.value)}
+       className="w-full pl-12 pr-6 py-4 bg-transparent font-space-mono text-lg text-[#1A0033] placeholder-[#8338EC]/50 rounded-2xl focus:outline-none focus:ring-4 focus:ring-[#FF006E]/30"
+      />
+     </div>
     </div>
 
     {filteredVideos.length === 0 ? (
      <div className="text-center py-16">
-      <p className="text-gray-500">No videos found</p>
+      <div className="inline-block">
+       <div className="w-32 h-32 bg-[#FF6B35] rounded-full flex items-center justify-center retro-border retro-shadow mx-auto mb-6 animate-pulse">
+        <Tv className="w-16 h-16 text-white" />
+       </div>
+       <p className="font-bungee text-2xl text-[#1A0033] mb-2">NO VIDEOS YET!</p>
+       <p className="font-space-mono text-[#8338EC]">Time to upload some groovy content!</p>
+      </div>
      </div>
     ) : (
-     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      {filteredVideos.map((video: Video) => (
-       <VideoCard 
-        key={video.id} 
-        video={video}
-        onDelete={() => handleDeleteVideo(video.id)}
-       />
-      ))}
-     </div>
+     <>
+      {/* Decorative Header */}
+      <div className="flex items-center gap-4 mb-8">
+       <div className="flex gap-2">
+        <div className="w-4 h-4 bg-[#FF006E] rounded-full retro-border" />
+        <div className="w-4 h-4 bg-[#FFBE0B] rounded-full retro-border" />
+        <div className="w-4 h-4 bg-[#00F5FF] rounded-full retro-border" />
+       </div>
+       <h2 className="font-bebas text-2xl text-[#1A0033] tracking-wide">
+        {filteredVideos.length} RADICAL {filteredVideos.length === 1 ? 'VIDEO' : 'VIDEOS'}
+       </h2>
+       <div className="flex-1 h-1 bg-gradient-to-r from-[#FF006E] via-[#8338EC] to-[#00F5FF] rounded-full" />
+      </div>
+      
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+       {filteredVideos.map((video: Video) => (
+        <VideoCard 
+         key={video.id} 
+         video={video}
+         onDelete={() => handleDeleteVideo(video.id)}
+        />
+       ))}
+      </div>
+     </>
     )}
+    
+    {/* Decorative Footer */}
+    <div className="mt-16 flex justify-center gap-4">
+     <Music className="w-8 h-8 text-[#FF006E] animate-bounce" />
+     <Sparkles className="w-8 h-8 text-[#8338EC] animate-bounce" style={{ animationDelay: '0.2s' }} />
+     <Tv className="w-8 h-8 text-[#00F5FF] animate-bounce" style={{ animationDelay: '0.4s' }} />
+    </div>
    </div>
 
    <VideoUploadModal
