@@ -6,6 +6,7 @@ export const videos = sqliteTable('videos', {
   description: text('description'),
   filename: text('filename').notNull(),
   url: text('url').notNull(),
+  transcriptUrl: text('transcript_url'),
   duration: integer('duration'),
   status: text('status').notNull().default('processing'),
   uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).notNull(),

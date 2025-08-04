@@ -131,6 +131,7 @@ export class VidTalkDatabase extends DurableObject {
     title?: string;
     description?: string;
     status?: string;
+    transcriptUrl?: string;
     processedAt?: Date;
   }) {
     return this.db.update(schema.videos)
@@ -254,6 +255,7 @@ export class VidTalkDatabase extends DurableObject {
           title?: string;
           description?: string;
           status?: string;
+          transcriptUrl?: string;
           processedAt?: Date;
         };
         const result = await this.updateVideo(data.id, data);
@@ -303,18 +305,25 @@ export class VideoProcessor extends DurableObject {
       console.log('Step 4: Saving transcription to database...');
       await this.saveTranscription(videoId, transcription);
       
+      // Step 5: Save transcript text file to R2
+      console.log('Step 5: Saving transcript text file to R2...');
+      const transcriptKey = await this.saveTranscriptToR2(videoUrl, transcription.text);
+      console.log(`Transcript saved to R2: ${transcriptKey}`);
+      
       // Update video status to completed
-      await this.updateVideoStatus(videoId, 'completed');
+      await this.updateVideoStatus(videoId, 'completed', transcriptKey);
       
       await this.ctx.storage.put('status', 'completed');
       await this.ctx.storage.put('completedAt', Date.now());
       await this.ctx.storage.put('mp3Url', processResult.mp3Url);
+      await this.ctx.storage.put('transcriptKey', transcriptKey);
       
       console.log(`Successfully processed video ${videoId}`);
       
       return {
         success: true,
         mp3Url: processResult.mp3Url,
+        transcriptKey: transcriptKey,
         transcriptionLength: transcription.text.length,
         wordCount: transcription.words?.length || 0,
       };
@@ -498,7 +507,7 @@ export class VideoProcessor extends DurableObject {
     }
   }
 
-  private async updateVideoStatus(videoId: string, status: string) {
+  private async updateVideoStatus(videoId: string, status: string, transcriptUrl?: string) {
     // Get database instance
     const dbId = this.env.DATABASE.idFromName('main');
     const dbStub = this.env.DATABASE.get(dbId);
@@ -509,9 +518,27 @@ export class VideoProcessor extends DurableObject {
     if (video) {
       await dbStub.updateVideo(videoId, {
         status: status,
+        transcriptUrl: transcriptUrl,
         processedAt: status === 'completed' ? new Date() : undefined,
       });
     }
+  }
+
+  private async saveTranscriptToR2(videoUrl: string, transcriptText: string): Promise<string> {
+    // Generate transcript file path in the same folder as the video
+    const urlParts = videoUrl.split('/');
+    const filename = urlParts[urlParts.length - 1];
+    const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'));
+    const transcriptKey = urlParts.slice(0, -1).concat(`${nameWithoutExt}_transcript.txt`).join('/');
+    
+    // Save transcript to R2
+    await this.env.VIDEO_BUCKET.put(transcriptKey, transcriptText, {
+      httpMetadata: {
+        contentType: 'text/plain',
+      },
+    });
+    
+    return transcriptKey;
   }
 
   async getStatus() {
@@ -522,6 +549,7 @@ export class VideoProcessor extends DurableObject {
     const failedAt = await this.ctx.storage.get('failedAt');
     const error = await this.ctx.storage.get('error');
     const mp3Url = await this.ctx.storage.get('mp3Url');
+    const transcriptKey = await this.ctx.storage.get('transcriptKey');
     
     return {
       status,
@@ -531,6 +559,7 @@ export class VideoProcessor extends DurableObject {
       failedAt,
       error,
       mp3Url,
+      transcriptKey,
     };
   }
 }
