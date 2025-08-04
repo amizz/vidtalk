@@ -25,14 +25,28 @@ interface LoaderData {
   videoUrl: string | null;
 }
 
-export async function loader({ params, request, context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
+export async function loader({ params, context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
   try {
-    const response = await fetch(new URL(`/api/videos/${params.id}`, request.url));
-    if (!response.ok) {
+    const { VidTalkAPI } = await import("~/lib/api");
+    const api = new VidTalkAPI(context.cloudflare.env);
+    const { video } = await api.getVideo(params.id!);
+    
+    if (!video) {
       return { video: null, videoUrl: null };
     }
-    const data = await response.json() as { video: Video };
-    return { video: data.video, videoUrl: `${context.cloudflare.env.R2_PUBLIC_URL}/${data.video.url}` };
+    
+    // Transform the API response to match the frontend Video interface
+    const transformedVideo: Video = {
+      id: video.id,
+      title: video.title,
+      duration: video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : '0:00',
+      uploadDate: new Date(video.uploadedAt).toLocaleDateString(),
+      status: video.status as 'transcribed' | 'processing' | 'failed',
+      r2Key: video.url,
+      url: video.url
+    };
+    
+    return { video: transformedVideo, videoUrl: `${context.cloudflare.env.R2_PUBLIC_URL}/${video.url}` };
   } catch (error) {
     console.error('Failed to load video:', error);
     return { video: null, videoUrl: null };

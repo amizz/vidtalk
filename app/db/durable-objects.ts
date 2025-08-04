@@ -5,6 +5,77 @@ import { eq, asc } from 'drizzle-orm';
 import * as schema from './schema';
 import migrations from './migrations/migrations';
 
+const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25 MB limit
+const CHUNK_SIZE = 1024 * 1024; // 1 MB chunks
+
+// Helper function to group words into segments (sentences/phrases)
+function groupWordsIntoSegments(words: Array<{
+  word?: string;
+  text?: string;
+  start?: number;
+  end?: number;
+}>, maxWordsPerSegment: number = 15, maxDurationPerSegment: number = 10): Array<{
+  text: string;
+  startTime: number;
+  endTime: number;
+}> {
+  if (!words || words.length === 0) return [];
+  
+  const segments: Array<{ text: string; startTime: number; endTime: number }> = [];
+  let currentSegment: typeof words = [];
+  let segmentDuration = 0;
+  
+  for (let i = 0; i < words.length; i++) {
+    const word = words[i];
+    const wordText = word.word || word.text || '';
+    const wordStart = word.start || 0;
+    const wordEnd = word.end || 0;
+    
+    currentSegment.push(word);
+    
+    // Calculate current segment duration
+    if (currentSegment.length > 0) {
+      const segmentStart = currentSegment[0].start || 0;
+      segmentDuration = wordEnd - segmentStart;
+    }
+    
+    // Check if we should end the segment
+    const shouldEndSegment = 
+      // End on sentence boundaries (punctuation)
+      /[.!?]$/.test(wordText) ||
+      // Or if we've reached max words
+      currentSegment.length >= maxWordsPerSegment ||
+      // Or if segment duration exceeds max
+      segmentDuration >= maxDurationPerSegment ||
+      // Or if this is the last word
+      i === words.length - 1;
+    
+    if (shouldEndSegment && currentSegment.length > 0) {
+      // Create segment from current words
+      const segmentText = currentSegment
+        .map(w => w.word || w.text || '')
+        .join(' ')
+        .trim();
+      
+      const segmentStart = currentSegment[0].start || 0;
+      const segmentEnd = currentSegment[currentSegment.length - 1].end || 0;
+      
+      if (segmentText) {
+        segments.push({
+          text: segmentText,
+          startTime: segmentStart,
+          endTime: segmentEnd,
+        });
+      }
+      
+      currentSegment = [];
+      segmentDuration = 0;
+    }
+  }
+  
+  return segments;
+}
+
 export class VidTalkDatabase extends DurableObject {
   private db!: ReturnType<typeof drizzle>;
 
@@ -44,6 +115,11 @@ export class VidTalkDatabase extends DurableObject {
   }
 
   async deleteVideo(id: string) {
+    const transcript = await this.db.select().from(schema.transcripts).where(eq(schema.transcripts.videoId, id)).get();
+    if (transcript) {
+      await this.db.delete(schema.transcriptSegments).where(eq(schema.transcriptSegments.transcriptId, transcript.id));
+      await this.db.delete(schema.transcripts).where(eq(schema.transcripts.id, transcript.id));
+    }
     return this.db.delete(schema.videos).where(eq(schema.videos.id, id)).returning().get();
   }
 
@@ -183,11 +259,11 @@ export class VideoProcessor extends DurableObject {
       
       // Step 1: Call the video converter container to download, convert, and upload
       console.log('Step 1: Processing video through container...');
-      const mp3Url = await this.processVideoInContainer(videoId, videoUrl);
+      const processResult = await this.processVideoInContainer(videoId, videoUrl);
       
       // Step 2: Download MP3 from R2 for transcription
-      console.log('Step 2: Downloading MP3 for transcription...');
-      const mp3Data = await this.downloadMP3(mp3Url);
+      console.log(`Step 2: Downloading MP3 (${JSON.stringify(processResult)}) for transcription...`);
+      const mp3Data = await this.downloadMP3(processResult.mp3Url);
       
       // Step 3: Send MP3 to Whisper AI for transcription
       console.log('Step 3: Transcribing audio with Whisper AI...');
@@ -202,13 +278,13 @@ export class VideoProcessor extends DurableObject {
       
       await this.ctx.storage.put('status', 'completed');
       await this.ctx.storage.put('completedAt', Date.now());
-      await this.ctx.storage.put('mp3Url', mp3Url);
+      await this.ctx.storage.put('mp3Url', processResult.mp3Url);
       
       console.log(`Successfully processed video ${videoId}`);
       
       return {
         success: true,
-        mp3Url,
+        mp3Url: processResult.mp3Url,
         transcriptionLength: transcription.text.length,
         wordCount: transcription.words?.length || 0,
       };
@@ -225,7 +301,7 @@ export class VideoProcessor extends DurableObject {
     }
   }
 
-  private async processVideoInContainer(videoId: string, videoUrl: string): Promise<string> {
+  private async processVideoInContainer(videoId: string, videoUrl: string): Promise<{ success: boolean; mp3Url: string; error?: string }> {
     // Get the video converter container
     const videoConverterId = this.env.VIDEO_CONVERTER.idFromName('converter');
     const videoConverterStub = this.env.VIDEO_CONVERTER.get(videoConverterId);
@@ -253,7 +329,7 @@ export class VideoProcessor extends DurableObject {
       throw new Error(result.error || 'Video processing failed');
     }
     
-    return result.mp3Url;
+    return result;
   }
 
   private async downloadMP3(mp3Url: string): Promise<ArrayBuffer> {
@@ -275,19 +351,71 @@ export class VideoProcessor extends DurableObject {
       speaker?: string;
       confidence?: number;
     }>;
+    word_count?: number;
   }> {
-    // Convert ArrayBuffer to Uint8Array for Whisper AI
-    const audioArray = [...new Uint8Array(mp3Data)];
-    
-    // Call Whisper AI
-    const response = await this.env.AI.run('@cf/openai/whisper', {
-      audio: audioArray,
-    });
-    
-    if (!response || !response.text) {
-      throw new Error('Transcription failed: No text returned');
+    const ai = this.env.AI;
+    if (!ai) {
+      throw new Error("AI binding not configured");
     }
+
+    let response;
+    let transcriptions: string[] = [];
+    let allWords: any[] = [];
     
+    // Check if we need chunking
+    if (mp3Data.byteLength > CHUNK_SIZE) {
+      console.log(`Processing large file (${(mp3Data.byteLength / 1024 / 1024).toFixed(2)} MB) with chunking`);
+      
+      // Calculate chunk parameters
+      const totalChunks = Math.ceil(mp3Data.byteLength / CHUNK_SIZE);
+      const overlapSize = Math.floor(CHUNK_SIZE * 0.1); // 10% overlap to prevent word splitting
+      
+      // Process chunks
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i === 0 ? 0 : (i * CHUNK_SIZE) - overlapSize;
+        const end = Math.min(start + CHUNK_SIZE, mp3Data.byteLength);
+        const chunk = mp3Data.slice(start, end);
+        
+        console.log(`Processing chunk ${i + 1}/${totalChunks} (${(chunk.byteLength / 1024).toFixed(0)} KB)`);
+        
+        // Convert chunk to the format expected by Whisper
+        const chunkInput = {
+          audio: [...new Uint8Array(chunk)]
+        };
+        
+        // Call the AI model for this chunk
+        const chunkResponse = await ai.run('@cf/openai/whisper' as keyof AiModels, chunkInput) as Ai_Cf_Openai_Whisper_Output;
+        
+        if (!chunkResponse || typeof chunkResponse.text !== 'string') {
+          throw new Error(`Invalid response from Whisper model for chunk ${i + 1}`);
+        }
+        
+        // Collect results
+        transcriptions.push(chunkResponse.text);
+        if (chunkResponse.words) {
+          allWords.push(...chunkResponse.words);
+        }
+      }
+      
+      // Merge results
+      response = {
+        text: transcriptions.join(' '),
+        words: allWords,
+        word_count: transcriptions.join(' ').split(/\s+/).length,
+      };
+    } else {
+      // Process as single chunk for smaller files
+      const input = {
+        audio: [...new Uint8Array(mp3Data)]
+      };
+
+      response = await ai.run('@cf/openai/whisper' as keyof AiModels, input) as Ai_Cf_Openai_Whisper_Output;
+
+      if (!response || typeof response.text !== 'string') {
+        throw new Error("Invalid response from Whisper model");
+      }
+    }
+
     return response;
   }
 
@@ -319,18 +447,21 @@ export class VideoProcessor extends DurableObject {
       createdAt: new Date(),
     });
     
-    // Create transcript segments if available
-    if (transcriptionData.words && Array.isArray(transcriptionData.words)) {
-      for (let i = 0; i < transcriptionData.words.length; i++) {
-        const word = transcriptionData.words[i];
+    // Create transcript segments from words array
+    if (transcriptionData.words && Array.isArray(transcriptionData.words) && transcriptionData.words.length > 0) {
+      // Group words into meaningful segments instead of saving each word
+      const segments = groupWordsIntoSegments(transcriptionData.words);
+      
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
         await dbStub.createTranscriptSegment({
           id: crypto.randomUUID(),
           transcriptId: transcriptId,
-          text: word.word || word.text || '',
-          startTime: word.start || 0,
-          endTime: word.end || 0,
-          speaker: word.speaker,
-          confidence: word.confidence,
+          text: segment.text,
+          startTime: segment.startTime,
+          endTime: segment.endTime,
+          speaker: undefined, // Could be enhanced later with speaker diarization
+          confidence: undefined, // Could calculate average confidence from words
           order: i,
         });
       }

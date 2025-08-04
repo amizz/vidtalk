@@ -232,7 +232,7 @@ func uploadToR2(videoID, mp3Path string) (string, error) {
 		publicURL = fmt.Sprintf("https://%s.r2.cloudflarestorage.com", os.Getenv("R2_ACCOUNT_ID"))
 	}
 
-	return fmt.Sprintf("%s/%s", publicURL, key), nil
+	return fmt.Sprintf("%s%s", publicURL, key), nil
 }
 
 func sendJSONError(w http.ResponseWriter, message string, statusCode int) {

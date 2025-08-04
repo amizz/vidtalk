@@ -6,6 +6,8 @@ import { Search, Upload, Menu, Loader2 } from "lucide-react";
 import { useSidebar } from "~/contexts/SidebarContext";
 import { useToast } from "~/contexts/ToastContext";
 import type { LoaderFunctionArgs } from "react-router";
+import { VidTalkAPI } from "../lib/api";
+import type { CloudflareContext } from "~/types/types";
 
 interface Video {
   id: string;
@@ -23,11 +25,25 @@ interface LoaderData {
   videos: Video[];
 }
 
-export async function loader({ request }: LoaderFunctionArgs): Promise<LoaderData> {
+export async function loader({ context }: LoaderFunctionArgs<CloudflareContext>): Promise<LoaderData> {
   try {
-    const response = await fetch(new URL('/api/videos', request.url));
-    const data = await response.json() as { videos: Video[] };
-    return { videos: data.videos || [] };
+    const api = new VidTalkAPI(context.cloudflare.env);
+    const { videos } = await api.getVideos();
+    
+    // Transform the API response to match the frontend Video interface
+    const transformedVideos = (videos || []).map((video: any) => ({
+      id: video.id,
+      title: video.title,
+      thumbnail: video.thumbnail,
+      thumbnailKey: video.thumbnailKey,
+      duration: video.duration ? `${Math.floor(video.duration / 60)}:${(video.duration % 60).toString().padStart(2, '0')}` : '0:00',
+      uploadDate: new Date(video.uploadedAt).toLocaleDateString(),
+      status: video.status as 'transcribed' | 'processing' | 'failed',
+      r2Key: video.url,
+      url: video.url
+    }));
+    
+    return { videos: transformedVideos };
   } catch (error) {
     console.error('Failed to load videos:', error);
     return { videos: [] };
