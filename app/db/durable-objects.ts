@@ -425,6 +425,9 @@ export class VideoProcessor extends DurableObject {
       const totalChunks = Math.ceil(mp3Data.byteLength / CHUNK_SIZE);
       const overlapSize = Math.floor(CHUNK_SIZE * 0.1); // 10% overlap to prevent word splitting
       
+      // Track the last timestamp from previous chunk
+      let lastChunkEndTime = 0;
+      
       // Process chunks
       for (let i = 0; i < totalChunks; i++) {
         const start = i === 0 ? 0 : (i * CHUNK_SIZE) - overlapSize;
@@ -447,8 +450,55 @@ export class VideoProcessor extends DurableObject {
         
         // Collect results
         transcriptions.push(chunkResponse.text);
-        if (chunkResponse.words) {
-          allWords.push(...chunkResponse.words);
+        
+        // Process words with timestamp adjustment
+        if (chunkResponse.words && chunkResponse.words.length > 0) {
+          if (i > 0) {
+            // For chunks after the first, we need to handle overlap
+            // Find the first word that starts after the overlap region
+            let overlapEndTime = 0;
+            if (allWords.length > 0) {
+              // Calculate approximate overlap duration based on the last few words of previous chunk
+              const wordsToCheck = Math.min(10, allWords.length);
+              const recentWords = allWords.slice(-wordsToCheck);
+              const avgWordDuration = recentWords.reduce((sum, w) => sum + ((w.end || 0) - (w.start || 0)), 0) / wordsToCheck;
+              const estimatedOverlapWords = Math.floor(overlapSize / mp3Data.byteLength * chunkResponse.words.length);
+              overlapEndTime = avgWordDuration * estimatedOverlapWords;
+            }
+            
+            // Adjust timestamps for words after overlap
+            const adjustedWords = chunkResponse.words.map((word, idx) => {
+              // Skip words that might be in the overlap region
+              if (word.start !== undefined && word.start < overlapEndTime) {
+                return null; // Mark for filtering
+              }
+              
+              return {
+                ...word,
+                start: word.start !== undefined ? word.start + lastChunkEndTime - overlapEndTime : undefined,
+                end: word.end !== undefined ? word.end + lastChunkEndTime - overlapEndTime : undefined,
+              };
+            }).filter(word => word !== null); // Remove overlap words
+            
+            allWords.push(...adjustedWords);
+            
+            // Update last chunk end time if we have adjusted words
+            if (adjustedWords.length > 0) {
+              const lastWord = adjustedWords[adjustedWords.length - 1];
+              if (lastWord.end !== undefined) {
+                lastChunkEndTime = lastWord.end;
+              }
+            }
+          } else {
+            // First chunk - use words as-is
+            allWords.push(...chunkResponse.words);
+            
+            // Set the end time from the last word of this chunk
+            const lastWord = chunkResponse.words[chunkResponse.words.length - 1];
+            if (lastWord.end !== undefined) {
+              lastChunkEndTime = lastWord.end;
+            }
+          }
         }
       }
       

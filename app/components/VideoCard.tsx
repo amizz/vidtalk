@@ -141,9 +141,9 @@ export default function VideoCard({ video, onDelete }: VideoCardProps) {
           </div>
           
           {/* Duration Badge */}
-          <div className="absolute bottom-3 right-3 px-3 py-1 bg-[#FFBE0B] text-[#1A0033] font-bebas text-lg rounded-lg retro-border">
+          {/* <div className="absolute bottom-3 right-3 px-3 py-1 bg-[#FFBE0B] text-[#1A0033] font-bebas text-lg rounded-lg retro-border">
             {video.duration}
-          </div>
+          </div> */}
           
           {/* Retro TV Icon */}
           <div className="absolute top-3 left-3 w-10 h-10 bg-[#FF6B35] rounded-full flex items-center justify-center retro-border wiggle-hover">
